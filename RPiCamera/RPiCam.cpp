@@ -1,0 +1,412 @@
+/*
+------------------------------------------------------------------
+
+This file is part of the Open Ephys GUI
+Copyright (C) 2015 Open Ephys
+
+------------------------------------------------------------------
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+#include <stdio.h>
+#include "RPiCam.h"
+#include "RPiCamEditor.h"
+
+
+//const int MAX_MESSAGE_LENGTH = 64000;
+const int MAX_MESSAGE_LENGTH = 16000;
+
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+RPiCam::RPiCam()
+    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPath(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false)
+
+{
+    setProcessorType (PROCESSOR_TYPE_SOURCE);
+
+    createContext();
+
+	if (!address.isEmpty())
+	{
+	    openSocket();
+	}
+
+    sendSampleCount = false;
+}
+
+
+RPiCam::~RPiCam()
+{
+	sendMessage(String("Close"), 1000);
+    closeSocket();
+}
+
+
+void RPiCam::createEventChannels()
+{
+	EventChannel* chan = new EventChannel(EventChannel::TEXT, 1, MAX_MESSAGE_LENGTH, CoreServices::getGlobalSampleRate(), this);
+	chan->setName("RPiCam Messages");
+	chan->setDescription("Messages received through the RPiCam plugin");
+	chan->setIdentifier("external.network.rawData");
+	chan->addEventMetaData(new MetaDataDescriptor(MetaDataDescriptor::INT64, 1, "Software timestamp",
+		"OS high resolution timer count when the event was received", "timestamp.software"));
+	eventChannelArray.add(chan);
+	messageChannel = chan;
+}
+
+
+void RPiCam::setPort(int p, bool connect)
+{
+	if (p != port)
+	{
+		port = p;
+
+		if (connect || socket != NULL)
+		{
+			closeSocket();
+			openSocket();
+		}
+
+		RPiCamEditor* e = (RPiCamEditor*)getEditor();
+		e->updateValues();
+	}
+}
+
+
+void RPiCam::setAddress(String s, bool connect)
+{
+	if (!s.equalsIgnoreCase(address))
+	{
+		address = s;
+
+		if (connect || socket != NULL)
+		{
+			closeSocket();
+			openSocket();
+		}
+
+		RPiCamEditor* e = (RPiCamEditor*)getEditor();
+		e->updateValues();
+	}
+}
+
+
+void RPiCam::setResolution(int w, int h)
+{
+	width = w;
+	height = h;
+
+	if (!isRecording)
+	{
+		String msg("Resolution");
+		msg += String(" ") + String(width);
+		msg += String(" ") + String(height);
+		sendMessage(msg, 1000);
+	}
+}
+
+
+void RPiCam::setFramerate(int fps)
+{
+	framerate = fps;
+
+	if (!isRecording)
+	{
+		String msg("Framerate ");
+		msg += String(framerate);
+		sendMessage(msg, 1000);
+	}
+}
+
+
+void RPiCam::setVflip(bool status)
+{
+	vflip = status;
+	if (!isRecording)
+	{
+		sendMessage("VFlip " + String(status), 1000);
+	}
+}
+
+void RPiCam::setHflip(bool status)
+{
+	hflip = status;
+	if (!isRecording)
+	{
+		sendMessage("HFlip " + String(status), 1000);
+	}
+}
+
+
+void RPiCam::sendCameraParameters()
+{
+	if (!isRecording)
+	{
+		setResolution(width, height);
+		setFramerate(framerate);
+	}
+}
+
+
+void RPiCam::resetGains()
+{
+	if (!isRecording)
+	{
+		String msg("ResetGains");
+		sendMessage(msg, 1000);
+	}
+}
+
+
+void RPiCam::createContext()
+{
+    if (context == NULL)
+        context = zmq_ctx_new();
+}
+
+
+void RPiCam::destroyContext()
+{
+	if (context != NULL)
+	{
+		std::cout << "RPiCam destroying context ... ";
+		zmq_ctx_destroy(context);
+		context = NULL;
+		std::cout << "done\n";
+	}
+}
+
+
+void RPiCam::openSocket()
+{
+	if (socket == NULL)
+	{
+		socket = zmq_socket(context, ZMQ_REQ);
+		String url = String("tcp://") + String(address) + ":" + String(port);
+		std::cout << "RPiCam connecting to " << url.toStdString() << " ... ";
+
+		int rc = zmq_connect(socket, url.toRawUTF8());
+
+		if (rc != 0)
+		{
+			std::cout << "failed to open socket: " << zmq_strerror(zmq_errno()) << "\n";
+			socket = NULL;
+		}
+		else
+		{
+			std::cout << "done\n";
+		}
+	}
+	else
+	{
+		std::cout << "Socket already opened.\n";
+	}
+}
+
+
+bool RPiCam::closeSocket()
+{
+	if (socket != NULL)
+	{
+		std::cout << "RPiCam closing socket ...";
+    	zmq_close(socket);
+		socket = NULL;
+		std::cout << "done\n";
+	}
+
+    return true;
+}
+
+
+int RPiCam::getPort()
+{
+	return port;
+}
+
+
+String RPiCam::getAddress()
+{
+	return address;
+}
+
+
+String RPiCam::sendMessage(String msg, int timeout)
+{
+	String response;
+
+	std::cout << "RPiCam sending message: "  << msg.toStdString() << " ... ";
+
+	if (socket != NULL)
+	{
+		zmq_setsockopt(socket, ZMQ_RCVTIMEO, (const void*) &timeout, sizeof(int));
+		zmq_send(socket, msg.getCharPointer(), msg.length(), 0);
+
+		unsigned char* buffer = new unsigned char[MAX_MESSAGE_LENGTH];
+		int result = zmq_recv(socket, buffer, MAX_MESSAGE_LENGTH-1, 0);
+
+		if (result < 0)
+		{
+            response = String("");  // responder died.
+		}
+		else
+		{
+			response = String(reinterpret_cast<char*>(buffer), result);
+		}
+
+		delete buffer;
+
+	}
+	else
+	{
+		response = String("not connected");
+	}
+
+	std::cout << "the RPi answered: " << response.toStdString() << "\n";
+
+	return response;
+}
+
+
+void RPiCam::updateSettings()
+{
+	if (editor != NULL)
+	{
+		editor->update();
+	}
+}
+
+
+AudioProcessorEditor* RPiCam::createEditor(
+)
+{
+    editor = new RPiCamEditor(this, true);
+
+    return editor;
+}
+
+
+void RPiCam::setParameter(int parameterIndex, float newValue)
+{
+}
+
+
+void RPiCam::handleEvent(int eventType, juce::MidiMessage& event, int samplePosition)
+{
+}
+
+
+void RPiCam::startRecording()
+{
+	isRecording = true;
+
+	int expNumber = CoreServices::RecordNode::getExperimentNumber();
+	int recNumber = CoreServices::RecordNode::getRecordingNumber();
+	String recPath = CoreServices::RecordNode::getRecordingPath().getFullPathName();
+
+	String msg("Start");
+	msg += String(" Experiment=") + String(expNumber);
+	msg += String(" Recording=") + String(recNumber);
+	msg += String(" Path=") + recPath;
+
+	rpiRecPath = sendMessage(msg);
+    sendRecPath = true;
+
+	RPiCamEditor* e = (RPiCamEditor*)getEditor();
+	e->enableControls(false);
+}
+
+
+void RPiCam::stopRecording()
+{
+	isRecording  = false;
+
+	sendMessage(String("Stop"), 1000);
+
+	RPiCamEditor* e = (RPiCamEditor*)getEditor();
+	e->enableControls(true);
+}
+
+
+void RPiCam::process(AudioSampleBuffer& buffer)
+{
+
+    if (rpiRecPath.isNotEmpty() && sendRecPath)
+    {
+        juce::int64 timestamp_software = timer.getHighResolutionTicks();
+        String msg1("RPiCam Address=" + address + " RecPath=" + rpiRecPath);
+
+		uint8* msg1_raw = new uint8[msg1.length()+1];
+		memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
+		*(msg1_raw+msg1.length()) = '\0';
+
+	    MetaDataValueArray md;
+	    md.add(new MetaDataValue(MetaDataDescriptor::INT64, 1, &timestamp_software));
+	    TextEventPtr event = TextEvent::createTextEvent(messageChannel, CoreServices::getGlobalTimestamp(), String::fromUTF8(reinterpret_cast<const char*>((uint8*)msg1_raw), msg1.length()+1), md);
+	    addEvent(messageChannel, event, 0);
+
+//        addEvent(events,
+//                 MESSAGE,
+//                 0,
+//                 0,
+//                 0,
+//                 msg1.length()+1,
+//                 (uint8*)msg1_raw);
+		delete[] msg1_raw;
+
+        sendRecPath = false;
+    }
+}
+
+
+void RPiCam::enabledState(bool t)
+{
+    isEnabled = t;
+}
+
+
+void RPiCam::saveCustomParametersToXml(XmlElement* parentElement)
+{
+    XmlElement* mainNode = parentElement->createNewChildElement("RPiCam");
+	mainNode->setAttribute("address", address);
+    mainNode->setAttribute("port", port);
+}
+
+
+void RPiCam::loadCustomParametersFromXml()
+{
+
+    if (parametersAsXml != nullptr)
+    {
+        forEachXmlChildElement(*parametersAsXml, mainNode)
+        {
+            if (mainNode->hasTagName("RPiCam"))
+            {
+				std::cout << "RPiCam setting attribute address: " << mainNode->getStringAttribute("address") << "\n";
+                setAddress(mainNode->getStringAttribute("address"), false);
+            }
+            if (mainNode->hasTagName("RPiCam"))
+            {
+                setPort(mainNode->getIntAttribute("port"), false);
+            }
+        }
+    }
+}
+
