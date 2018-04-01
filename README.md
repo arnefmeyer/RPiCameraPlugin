@@ -1,6 +1,6 @@
 # RPiCamera
 
-A plugin for the [open-ephys plugin-GUI](https://github.com/open-ephys/plugin-GUI/) to control a Raspberry Pi (RPi) camera over network. The camera is controlled locally on the RPi using and communication between the recording system and the RPi is done via [zeromq](http://zeromq.org/). The system has successfully been tested with RPi 2/3 model B and the following camera modules:
+A plugin for the [open-ephys plugin-GUI](https://github.com/open-ephys/plugin-GUI/) to control a [Raspberry Pi (RPi)](https://www.raspberrypi.org/) camera over network. The camera is controlled locally on the RPi and communication between the recording system and the RPi is done via [zeromq](http://zeromq.org/). The system has successfully been tested with RPi versions 2 and 3 (model B) and the following camera modules:
 
 * [Camera Module V2](https://www.raspberrypi.org/products/camera-module-v2/)
 * [Pi NoIR Camera V2](https://www.raspberrypi.org/products/pi-noir-camera-v2/)
@@ -9,7 +9,7 @@ A plugin for the [open-ephys plugin-GUI](https://github.com/open-ephys/plugin-GU
 * [Arducam OV5647 NoIR (UC-325 Rev. A)](http://www.arducam.com/raspberry-pi-noir-camera-released/)
 * [Waveshare RPi Camera (F)](https://www.waveshare.com/rpi-camera-f.htm)
 
-The code has been developed to enable detailed behavioral tracking using a head-mounted camera system in freely moving mice. A description and validation of the camera system, including examples demonstrating demonstrate the power of the new technology in a series of experiments, can be found in:
+The code has been developed to enable detailed behavioral tracking using a head-mounted camera system in freely moving mice. A description and validation of the camera system, including examples demonstrating the power of the new technology in a series of experiments (e.g., eye tracking in freely moving mice), can be found in:
 
 AF Meyer, J Poort, J O'Keefe, M Sahani, and JF Linden: _An ultralight head-mounted camera system integrates detailed behavioral monitoring with multichannel electrophysiology in freely moving mice_ (under review and biorxiv)
 
