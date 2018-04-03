@@ -5,6 +5,20 @@
 # License: GPLv3
 """
     Script to control the RPi camera.
+
+    Two commands are available:
+
+        - "plugin": run in plugin mode. Use this with the open-ephys RPi camera
+                    open-ephys plugin (or any other program via zmq)
+        - "standalone": run without open-ephys plugin. Recording stops after
+                        a user-defined timeout or user interrupt (ctrl+c).
+
+    In both cases, the script will generate the following files:
+
+        - *.h264: the video data in h264 format
+        - *_info.json: a json file with video parameters, e.g., resolution
+        - *_timestamps.txt: a text file (csv) with frame/TTL timestamps
+
 """
 
 from __future__ import print_function
@@ -23,7 +37,7 @@ except ImportError:
 
 
 def run_plugin(output=None, width=640, height=480, framerate=30.,
-               name='rpicam_video', quality=23, strobe_pin=11, **kwargs):
+               name='rpicamera_video', quality=23, strobe_pin=11, **kwargs):
 
     if output is None:
         output = op.join(op.split(op.realpath(__file__))[0], 'RPiCameraVideos')
@@ -189,13 +203,13 @@ class ParserCreator(object):
                             help='frame rate (in Hz)')
         parser.add_argument('--output', '-o', default=None,
                             help='recording path')
-        parser.add_argument('--name', '-n', default='test',
+        parser.add_argument('--name', '-n', default='rpicamera_video',
                             help='video file base name')
         parser.add_argument('--strobe-pin', '-p', default=11, type=int,
                             help='GPIO strobe pin')
-        parser.add_argument('--quality', '-q', default=20, type=int,
+        parser.add_argument('--quality', '-q', default=23, type=int,
                             help='video quality: 1 (good) <= q <= 40 (bad)'
-                                 ' (default: 20)')
+                                 ' (default: 23)')
         parser.add_argument('--vflip', '-V', action="store_true",
                             default=False,
                             help='apply vertical flip to camera image')

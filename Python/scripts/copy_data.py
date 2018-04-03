@@ -5,7 +5,12 @@
 # License: GPLv3
 
 """
-    Copy camera data from RPi to recording computer
+    Copy camera data from RPi to the recording computer
+
+    The script recursively searches for event files created using the
+    open-ephys plugin-GUI and copies RPi camera data (*.{h264,txt,json}).
+    Currently works on Linux-based systems (e.g., Ubuntu) and with data
+    recorded in kwik format. See file "rpicamera/utils.py" for details.
 """
 
 from __future__ import print_function
