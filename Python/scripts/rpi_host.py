@@ -7,6 +7,8 @@
     Script to control the RPi camera.
 """
 
+from __future__ import print_function
+
 import argparse
 import sys
 import os
@@ -24,7 +26,7 @@ def run_plugin(output=None, width=640, height=480, framerate=30.,
                name='rpicam_video', quality=23, strobe_pin=11, **kwargs):
 
     if output is None:
-        output = op.join(op.split(__file__)[0], 'RPiCamera')
+        output = op.join(op.split(op.realpath(__file__))[0], 'RPiCameraVideos')
 
     if not op.exists(output):
         os.makedirs(output)
@@ -216,7 +218,7 @@ class ParserCreator(object):
 
         p.set_defaults(func=run_standalone)
 
-    def create_client(self):
+    def create_plugin(self):
 
         p = self._add_sub_parser('plugin',
                                  'zmq-based server for open-ephys plugin')
