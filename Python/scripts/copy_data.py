@@ -10,7 +10,8 @@
     The script recursively searches for event files created using the
     open-ephys plugin-GUI and copies RPi camera data (*.{h264,txt,json}).
     Currently works on Linux-based systems (e.g., Ubuntu) and with data
-    recorded in kwik format. See file "rpicamera/utils.py" for details.
+    recorded in kwik and binary format. See file "rpicamera/utils.py"
+    for details.
 """
 
 from __future__ import print_function
@@ -36,12 +37,12 @@ def copy_data(path=None, user=None, address=None):
     if not op.exists(path):
         os.makedirs(path)
 
-    event_files = rpu.get_event_files(path)
-    for ef in event_files:
+    for f in rpu.get_event_files(path):
 
-        remote_data = rpu.get_remote_info_from_events(ef)
+        messages = rpu.load_messages_from_event_file(f)
+        remote_data = rpu.parse_messages(messages)
 
-        rec_path = op.split(ef)[0]
+        rec_path = op.split(f)[0]
         for dd in remote_data:
 
             if address is not None:

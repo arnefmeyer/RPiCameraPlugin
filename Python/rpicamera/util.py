@@ -172,63 +172,96 @@ def load_video_parameters(path, pattern='*video*'):
 
 
 def get_event_files(path, verbose=True):
-    """recursive search for kwik event files (kwe)
+    """recursive search for event files
 
-        TODO: add support for  original, binary, and nwb formats
+        currently supported: kwik (kwe) and binary format (text.npy)
+
+        TODO: add support for open-ephys and nwb formats
     """
 
     event_files = []
-    for root, dirs, files in os.walk(path, topdown=False):
+    for root, dirs, files in os.walk(op.abspath(path), topdown=False):
 
         for f in files:
 
             if f.endswith('.kwe'):
 
                 if verbose:
-                    print("found event file: {}".format(op.join(root, f)))
+                    print("found kwik event file:", op.join(root, f))
+
+                event_files.append(op.join(root, f))
+
+            elif f == 'structure.oebin':
+
+                with open(op.join(root, 'structure.oebin'), 'r') as f:
+                    S = json.load(f)
+
+                for proc in S['events']:
+                    if proc['source_processor'] == 'Network Events':
+                        msg_file = op.join(root,
+                                           proc['folder_name'],
+                                           'text.npy')
+
+                        if op.exists(msg_file):
+                            event_files.append(msg_file)
+
+                        if verbose:
+                            print("found binary format event file:", msg_file)
 
                 event_files.append(op.join(root, f))
 
     return event_files
 
 
-def get_remote_info_from_events(event_file):
+def load_messages_from_event_file(event_file):
     """parse remote path and address from a kwik event file"""
 
     import h5py
 
+    if op.splitext(event_file)[1] == '.kwe':
+        # kwik event file
+        with h5py.File(event_file, 'r') as f:
+            messages = \
+                f['event_types']['Messages']['events']['user_data']['Text']
+
+    elif op.splitext(event_file)[1] == '.npy':
+        # binary format network event file
+        messages = [msg.strip() for msg in np.load(event_file).tolist()]
+
+    return messages
+
+
+def parse_messages(messages):
+
     remote_data = []
 
-    with h5py.File(event_file, 'r') as f:
+    for msg in messages:
 
-        messages = f['event_types']['Messages']['events']['user_data']['Text']
-        for msg in messages:
+        parts = msg.split()
 
-            parts = msg.split()
+        if parts[0] == 'RPiCam':
 
-            if parts[0] == 'RPiCam':
+            i1 = msg.find('Address=')
+            i2 = msg.find('RecPath=')
 
-                i1 = msg.find('Address=')
-                i2 = msg.find('RecPath=')
+            remote_address = msg[i1+len('Address='):i2-1]
+            remote_address = ''.join(e for e in remote_address
+                                     if e.isdigit() or e == '.')
+            remote_address = ''.join(e[:min(len(e), 3)] + '.'
+                                     for e in remote_address.split('.'))
+            remote_address = remote_address[:-1]
+            print("address:", remote_address)
 
-                remote_address = msg[i1+len('Address='):i2-1]
-                remote_address = ''.join(e for e in remote_address
-                                         if e.isdigit() or e == '.')
-                remote_address = ''.join(e[:min(len(e), 3)] + '.'
-                                         for e in remote_address.split('.'))
-                remote_address = remote_address[:-1]
-                print("address:", remote_address)
+            remote_path = msg[i2+len('RecPath='):]
+            remote_path = ''.join(e for e in remote_path
+                                  if e.isalnum() or
+                                  e in ['/', '-', '_'])
+            ii = remote_path.find('recording_0')
+            remote_path = remote_path[:ii+len('recording_0')]
+            print("remote path:", remote_path)
 
-                remote_path = msg[i2+len('RecPath='):]
-                remote_path = ''.join(e for e in remote_path
-                                      if e.isalnum() or
-                                      e in ['/', '-', '_'])
-                ii = remote_path.find('recording_0')
-                remote_path = remote_path[:ii+len('recording_0')]
-                print("remote path:", remote_path)
-
-                remote_data.append({'address': remote_address,
-                                    'path': remote_path})
+            remote_data.append({'address': remote_address,
+                                'path': remote_path})
 
     return remote_data
 
