@@ -42,7 +42,9 @@ def copy_data(path=None, user=None, address=None):
         messages = rpu.load_messages_from_event_file(f)
         remote_data = rpu.parse_messages(messages)
 
-        rec_path = op.split(f)[0]
+        print("remote data:", remote_data)
+
+        rec_path = op.split(f['recording_path'])[0]
         for dd in remote_data:
 
             if address is not None:

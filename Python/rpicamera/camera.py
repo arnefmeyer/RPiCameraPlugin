@@ -135,7 +135,7 @@ class CameraGPIO(picamera.PiCamera):
 
     def start_recording(self, output, **kwargs):
 
-        ts_path = op.splitext(output)[0] + '_timestamps.txt'
+        ts_path = op.splitext(output)[0] + '_timestamps.csv'
         try:
             self.ts_file = open(ts_path, 'w')
             self.ts_file.write('# frame timestamp, TTL timestamp\n')

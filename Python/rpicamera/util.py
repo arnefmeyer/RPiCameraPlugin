@@ -186,29 +186,33 @@ def get_event_files(path, verbose=True):
 
             if f.endswith('.kwe'):
 
-                if verbose:
-                    print("found kwik event file:", op.join(root, f))
-
-                event_files.append(op.join(root, f))
+                event_files.append({'filepath': op.join(root, f),
+                                    'format': 'kwik',
+                                    'recording_path': root})
 
             elif f == 'structure.oebin':
 
-                with open(op.join(root, 'structure.oebin'), 'r') as f:
-                    S = json.load(f)
+                with open(op.join(root, 'structure.oebin'), 'r') as ff:
+                    S = json.load(ff)
 
                 for proc in S['events']:
-                    if proc['source_processor'] == 'Network Events':
+
+                    if proc['source_processor'].startswith('RPiCamera'):
                         msg_file = op.join(root,
+                                           'events',
                                            proc['folder_name'],
                                            'text.npy')
 
                         if op.exists(msg_file):
-                            event_files.append(msg_file)
+                            event_files.append({'filepath': msg_file,
+                                                'format': 'binary',
+                                                'recording_path': root})
 
-                        if verbose:
-                            print("found binary format event file:", msg_file)
-
-                event_files.append(op.join(root, f))
+    if verbose:
+        print("found {} event files:".format(len(event_files)))
+        for ef in event_files:
+            print("format: {}, file path: {}".format(ef['format'],
+                                                     ef['filepath']))
 
     return event_files
 
@@ -218,15 +222,16 @@ def load_messages_from_event_file(event_file):
 
     import h5py
 
-    if op.splitext(event_file)[1] == '.kwe':
+    if event_file['format'] == 'kwik':
         # kwik event file
-        with h5py.File(event_file, 'r') as f:
+        with h5py.File(event_file['path'], 'r') as f:
             messages = \
                 f['event_types']['Messages']['events']['user_data']['Text']
 
-    elif op.splitext(event_file)[1] == '.npy':
+    elif event_file['format'] == 'binary':
         # binary format network event file
-        messages = [msg.strip() for msg in np.load(event_file).tolist()]
+        messages = [msg.strip()
+                    for msg in np.load(event_file['filepath']).tolist()]
 
     return messages
 

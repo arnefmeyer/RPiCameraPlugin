@@ -276,7 +276,7 @@ class Controller(object):
 
             file_base = op.join(rec_path, filename)
             video_path = file_base + '.h264'
-            info_file = file_base + '_info.json'
+            param_file = file_base + '_params.json'
 
             # parameters and path information
             params = {'rec_path': rec_path,
@@ -287,7 +287,7 @@ class Controller(object):
                       'height': self.camera.resolution.height,
                       'framerate': float(self.camera.framerate)}
 
-            with open(info_file, 'w') as f:
+            with open(param_file, 'w') as f:
                 json.dump(params, f, indent=4,
                           sort_keys=True, separators=(',', ': '))
 
