@@ -211,8 +211,10 @@ def get_event_files(path, verbose=True):
     if verbose:
         print("found {} event files:".format(len(event_files)))
         for ef in event_files:
-            print("format: {}, file path: {}".format(ef['format'],
-                                                     ef['filepath']))
+            print("format:", ef['format'])
+            print("file path:", ef['filepath'])
+            print("recording path:", ef['recording_path'])
+            print("")
 
     return event_files
 

@@ -34,6 +34,8 @@ def copy_data(path=None, user=None, address=None):
     assert path is not None
     assert user is not None
 
+    path = op.abspath(op.expanduser(path))
+
     if not op.exists(path):
         os.makedirs(path)
 
@@ -42,9 +44,6 @@ def copy_data(path=None, user=None, address=None):
         messages = rpu.load_messages_from_event_file(f)
         remote_data = rpu.parse_messages(messages)
 
-        print("remote data:", remote_data)
-
-        rec_path = op.split(f['recording_path'])[0]
         for dd in remote_data:
 
             if address is not None:
@@ -54,7 +53,8 @@ def copy_data(path=None, user=None, address=None):
 
             try:
                 rpu.scp(user, remote_address,
-                        op.join(dd['path'], '*.{h264,txt,json}'), rec_path)
+                        op.join(dd['path'], '*.{h264,csv,json}'),
+                        f['recording_path'])
             except BaseException:
                 traceback.print_exc()
 
