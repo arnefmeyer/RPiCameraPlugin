@@ -47,8 +47,8 @@ def get_video_files(path, absolute=False, recursive=False):
                 # each file belonging to this recording should have the same
                 # base name
                 basename = op.splitext(video_file)[0]
-                ts_file = basename + '_timestamps.txt'
-                param_file = basename + '_info.json'
+                ts_file = basename + '_timestamps.csv'
+                param_file = basename + '_params.json'
                 if op.exists(ts_file) and op.exists(param_file):
                     dd = {'video': video_file,
                           'timestamps': ts_file,
