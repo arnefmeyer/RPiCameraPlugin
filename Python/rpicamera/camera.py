@@ -15,6 +15,7 @@
 from __future__ import print_function
 
 import time
+import os
 import os.path as op
 import traceback
 
@@ -150,6 +151,10 @@ class CameraGPIO(picamera.PiCamera):
     def stop_recording(self):
 
         if self.ts_file is not None:
+
+            # make sure all (buffered) data are being written
+            self.ts_file.flush()
+            os.fsync(self.ts_file.fileno())
 
             self.ts_file.close()
             self.ts_file = None
