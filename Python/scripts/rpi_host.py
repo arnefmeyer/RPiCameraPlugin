@@ -36,11 +36,20 @@ except ImportError:
     from rpicamera.controller import Controller, ZmqThread
 
 
-def run_plugin(output=None, width=640, height=480, framerate=30.,
-               name='rpicamera_video', quality=23, strobe_pin=11, **kwargs):
+def run_plugin(output=None,
+               width=640,
+               height=480,
+               framerate=30.,
+               name='rpicamera_video',
+               quality=23,
+               strobe_pin=11,
+               zoom=(0, 0, 1, 1),
+               **kwargs):
 
     if output is None:
         output = op.join(op.split(op.realpath(__file__))[0], 'RPiCameraVideos')
+    else:
+        output = op.expanduser(output)
 
     if not op.exists(output):
         os.makedirs(output)
@@ -52,6 +61,7 @@ def run_plugin(output=None, width=640, height=480, framerate=30.,
                             framerate=framerate,
                             resolution=(width, height),
                             strobe_pin=strobe_pin,
+                            zoom=zoom,
                             **kwargs)
 
     print("Starting preview and warming up camera for 2 seconds")
@@ -100,6 +110,10 @@ def run_plugin(output=None, width=640, height=480, framerate=30.,
             print("Closing camera")
             controller.close()
 
+        elif name == 'Zoom':
+            print("Setting zoom to:", value)
+            controller.zoom = value
+
     print("Starting ZMQ thread")
     thread = ZmqThread(start_cam, stop_cam, close_cam, set_parameter)
     thread.start()
@@ -116,9 +130,18 @@ def run_plugin(output=None, width=640, height=480, framerate=30.,
     thread.join()
 
 
-def run_standalone(output=None, width=640, height=480, framerate=30.,
-                   timeout=600, strobe_pin=11, name='test', quality=20,
-                   update_interval=5, verbose=True, **kwargs):
+def run_standalone(output=None,
+                   width=640,
+                   height=480,
+                   framerate=30.,
+                   timeout=600,
+                   strobe_pin=11,
+                   name='test',
+                   quality=23,
+                   update_interval=5,
+                   verbose=True,
+                   zoom=(0, 0, 1, 1),
+                   **kwargs):
     """run camera in standalone mode (i.e. without open-ephys plugin)
 
         The recording will stop after a given timeout (default: 600 seconds)
@@ -128,6 +151,8 @@ def run_standalone(output=None, width=640, height=480, framerate=30.,
 
     if output is None:
         output = op.join(op.split(__file__)[0], 'RPiCamera_test')
+    else:
+        output = op.expanduser(output)
 
     if not op.exists(output):
         os.makedirs(output)
@@ -135,8 +160,11 @@ def run_standalone(output=None, width=640, height=480, framerate=30.,
     print("Data path:", output)
 
     print("Opening controller and camera")
-    controller = Controller(output, framerate=framerate,
-                            resolution=(width, height), strobe_pin=strobe_pin)
+    controller = Controller(output,
+                            framerate=framerate,
+                            resolution=(width, height),
+                            strobe_pin=strobe_pin,
+                            zoom=zoom)
 
     print("Starting preview and warming up camera for 2 seconds")
     controller.start_preview(warmup=2., fix_awb_gains=True)
@@ -216,6 +244,11 @@ class ParserCreator(object):
         parser.add_argument('--hflip', '-H', action="store_true",
                             default=False,
                             help='apply horizontal flip to camera image')
+        parser.add_argument('--zoom', '-z', default=(0, 0, 1, 1),
+                            type=float, nargs=4,
+                            help='camera zoom (aka ROI):'
+                                 ' left bottom right top. All values are'
+                                 ' normalized coordinates, i.e. [0, 1]')
 
     def _add_sub_parser(self, name, desc):
 

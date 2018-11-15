@@ -124,6 +124,11 @@ class ZmqThread(threading.Thread):
                 self.parameter_callback('HFlip', int(parts[1]) > 0)
                 socket.send("Done")
 
+            elif cmd == 'Zoom':
+
+                self.parameter_callback('Zoom', parts[1:])
+                socket.send("Done")
+
             else:
                 socket.send("Not handled")
 
@@ -195,6 +200,19 @@ class Controller(object):
 
         if self.camera is not None and not self.camera.recording:
             self.camera.hflip = status
+
+    @property
+    def zoom(self):
+
+        if self.camera is not None:
+            return self.camera.zoom
+
+    @zoom.setter
+    def zoom(self, coords):
+
+        if self.camera is not None:
+            if len(coords) == 4 and min(coords) >= 0 and max(coords) <= 1:
+                self.camera.zoom = coords
 
     def cleanup(self):
 

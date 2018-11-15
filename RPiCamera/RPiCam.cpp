@@ -37,7 +37,7 @@ const int MAX_MESSAGE_LENGTH = 16000;
 #endif
 
 RPiCam::RPiCam()
-    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPath(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false)
+    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPath(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false), zoom{0, 0, 100, 100}
 
 {
     setProcessorType (PROCESSOR_TYPE_SOURCE);
@@ -153,6 +153,33 @@ void RPiCam::setHflip(bool status)
 	{
 		sendMessage("HFlip " + String(status), 1000);
 	}
+}
+
+
+void RPiCam::setZoom(int z[4])
+{
+	zoom[0] = z[0];
+	zoom[1] = z[1];
+	zoom[2] = z[2];
+	zoom[3] = z[3];
+
+	String msg("Zoom ");
+	for (int i=0; i<4; i++)
+	{
+		// convert from percent to normalized coordinates
+		msg += String(zoom[i]/100., 2);
+		if (i < 3)
+			msg += " ";
+	}
+	sendMessage(msg, 1000);
+}
+
+void RPiCam::getZoom(int *z)
+{
+	z[0] = zoom[0];
+	z[1] = zoom[1];
+	z[2] = zoom[2];
+	z[3] = zoom[3];
 }
 
 
@@ -387,6 +414,12 @@ void RPiCam::saveCustomParametersToXml(XmlElement* parentElement)
     XmlElement* mainNode = parentElement->createNewChildElement("RPiCam");
 	mainNode->setAttribute("address", address);
     mainNode->setAttribute("port", port);
+	mainNode->setAttribute("hflip", hflip);
+	mainNode->setAttribute("vflip", vflip);
+	mainNode->setAttribute("x1", zoom[0]);
+	mainNode->setAttribute("y1", zoom[1]);
+	mainNode->setAttribute("x2", zoom[2]);
+	mainNode->setAttribute("y2", zoom[3]);
 }
 
 
@@ -401,10 +434,25 @@ void RPiCam::loadCustomParametersFromXml()
             {
 				std::cout << "RPiCam setting attribute address: " << mainNode->getStringAttribute("address") << "\n";
                 setAddress(mainNode->getStringAttribute("address"), false);
-            }
-            if (mainNode->hasTagName("RPiCam"))
-            {
-                setPort(mainNode->getIntAttribute("port"), false);
+				setPort(mainNode->getIntAttribute("port"), false);
+
+				if (mainNode->hasAttribute("hflip"))
+				{
+					hflip = mainNode->getBoolAttribute("hflip");
+				}
+
+				if (mainNode->hasAttribute("vflip"))
+				{
+					vflip = mainNode->getBoolAttribute("vflip");
+				}
+
+				if (mainNode->hasAttribute("x1"))
+				{
+					zoom[0] = mainNode->getIntAttribute("x1");
+					zoom[1] = mainNode->getIntAttribute("y1");
+					zoom[2] = mainNode->getIntAttribute("x2");
+					zoom[3] = mainNode->getIntAttribute("y2");
+				}
             }
         }
     }
