@@ -245,7 +245,7 @@ void RPiCamEditor::buttonEvent(Button* button)
 			if (increment != 0)
 			{
 				int newValue = currentValue + increment;
-				if (newValue >= 1 && newValue <= 100)
+				if (newValue >= 0 && newValue <= 100)
 				{
 					if ((i < 2 && newValue < zoom[i+2]) || (i >= 2 && newValue > zoom[i-2]))
 					{
@@ -293,7 +293,7 @@ void RPiCamEditor::labelTextChanged(juce::Label *label)
 			if (label == zoomValues[i])
 			{
 				int newValue = label->getText().getIntValue();
-				if (newValue >= 1 && newValue <= 100)
+				if (newValue >= 0 && newValue <= 100)
 				{
 					if ((i < 2 && newValue < zoom[i+2]) || (i >= 2 && newValue > zoom[i-2]))
 					{

@@ -126,7 +126,7 @@ class ZmqThread(threading.Thread):
 
             elif cmd == 'Zoom':
 
-                self.parameter_callback('Zoom', parts[1:])
+                self.parameter_callback('Zoom', [float(p) for p in parts[1:]])
                 socket.send("Done")
 
             else:
