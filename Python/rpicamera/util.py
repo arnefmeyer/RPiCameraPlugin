@@ -263,8 +263,6 @@ def parse_messages(messages):
             remote_path = ''.join(e for e in remote_path
                                   if e.isalnum() or
                                   e in ['/', '-', '_'])
-            ii = remote_path.find('recording_0')
-            remote_path = remote_path[:ii+len('recording_0')]
             print("remote path:", remote_path)
 
             remote_data.append({'address': remote_address,
