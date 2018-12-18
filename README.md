@@ -11,7 +11,7 @@ A plugin for the [open-ephys plugin-GUI](https://github.com/open-ephys/plugin-GU
 
 The code has been developed to enable detailed behavioral tracking using a head-mounted camera system in freely moving mice. A description and validation of the camera system, including examples demonstrating the power of the new technology in a series of experiments (e.g., eye tracking in freely moving mice), can be found in:
 
-AF Meyer, J Poort, J O'Keefe, M Sahani, and JF Linden: _An ultralight head-mounted camera system integrates detailed behavioral monitoring with multichannel electrophysiology in freely moving mice_ (under review and biorxiv)
+>AF Meyer, J Poort, J O'Keefe, M Sahani, and JF Linden: _A head-mounted camera system integrates detailed behavioral monitoring with multichannel electrophysiology in freely moving mice_, Neuron, Volume 100, p46-60, 2018. [link (open access)](https://doi.org/10.1016/j.neuron.2018.09.020)
 
 
 ## Dependencies

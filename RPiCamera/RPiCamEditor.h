@@ -99,6 +99,11 @@ private:
 	ScopedPointer<UtilityButton> vflipButton;
 	ScopedPointer<UtilityButton> hflipButton;
 
+	ScopedPointer<Label> zoomLabel;
+	OwnedArray<Label> zoomValues;
+	OwnedArray<TriangleButton> upButtons;
+	OwnedArray<TriangleButton> downButtons;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RPiCamEditor);
 
 };

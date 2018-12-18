@@ -98,8 +98,12 @@ class VideoEncoderGPIO(picamera.PiVideoEncoder):
 
 class CameraGPIO(picamera.PiCamera):
 
-    def __init__(self, framerate=30., resolution=(640, 480), clock_mode='raw',
-                 strobe_pin=11, **kwargs):
+    def __init__(self,
+                 framerate=30.,
+                 resolution=(640, 480),
+                 clock_mode='raw',
+                 strobe_pin=11,
+                 **kwargs):
 
         super(CameraGPIO, self).__init__(framerate=framerate,
                                          resolution=resolution,

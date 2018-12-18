@@ -80,6 +80,8 @@ public:
 	bool getVflip() { return vflip; }
 	void setHflip(bool status);
 	bool getHflip() { return hflip; }
+	void setZoom(int z[4]);
+	void getZoom(int *z);
 	void resetGains();
 
 	void sendCameraParameters();
@@ -111,6 +113,7 @@ private:
 	int framerate;
 	bool vflip;
 	bool hflip;
+	int zoom[4];
 	bool isRecording;
 
 	const EventChannel* messageChannel{ nullptr };
