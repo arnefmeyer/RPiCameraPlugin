@@ -17,6 +17,7 @@ import numpy as np
 import json
 import platform
 import subprocess
+import traceback
 
 
 # -----------------------------------------------------------------------------
@@ -69,7 +70,25 @@ def read_timestamp_deltas(path):
 
     if len(files) > 0:
         ts_file = files[0]
-        ts = np.genfromtxt(ts_file, delimiter=',')
+
+        try:
+            ts = np.genfromtxt(ts_file, delimiter=',')
+
+        except ValueError:
+            # this can happen if the file has been closed before the value of the 2nd column was written
+            ts = []
+            with open(ts_file, 'r') as f:
+                for line in f:
+                    if not line.startswith('#'):
+                        if ',' in line:
+                            values = [int(x) for x in line.split(',')]
+                            if len(values) == 2:
+                                ts.append(values)
+            ts = np.asarray(ts)
+
+        except BaseException:
+            # some other error
+            traceback.print_exc()
 
         dts = np.diff(ts, axis=1).ravel() / 1000000.  # usec -> sec
 
