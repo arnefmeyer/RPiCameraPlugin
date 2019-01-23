@@ -72,7 +72,7 @@ You can either set a static IP via the graphical user interface or by editing th
 
 interface eth0  
 static ip_address=1.2.3.4/24  
-static routers=1.2.3.1
+static routers=1.2.3.1  
 static domain_name_servers=1.2.3.1
 
 where eth0 is the network interface (here: ethernet), 1.2.3.4 is the static IP of the RPi, and 1.2.3.1 is the router's IP. Save the changes and restart the RPi.
