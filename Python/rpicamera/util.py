@@ -304,11 +304,14 @@ def scp(user, address, src_file, dest_dir, verbose=True):
         print("running commmand: {}".format(src_cmd))
 
     if platform.system() == "Linux":
-        out = subprocess.check_output(['scp', src_cmd, dest_dir])
+        # use scp command; disable strict filename checking (option -T)
+        out = subprocess.check_output(['scp', '-T', src_cmd, dest_dir])
+
     elif platform.system() == "Windows":
-        pass
+        raise NotImplementedError()
+
     elif platform.system() == "Darwin":
-        pass
+        raise NotImplementedError()
 
     if verbose:
         print(out)
