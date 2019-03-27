@@ -82,13 +82,17 @@ def read_timestamp_deltas(path):
                     if not line.startswith('#'):
                         if ',' in line:
                             values = [int(x) for x in line.split(',')]
-                            if len(values) == 2:
+                            if len(values) >= 2:
                                 ts.append(values)
             ts = np.asarray(ts)
 
         except BaseException:
             # some other error
             traceback.print_exc()
+
+        if ts.shape[1] > 2:
+            # only use first two columns
+            ts = ts[:, :2]
 
         dts = np.diff(ts, axis=1).ravel() / 1000000.  # usec -> sec
 
