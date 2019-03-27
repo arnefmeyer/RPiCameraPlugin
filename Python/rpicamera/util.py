@@ -239,7 +239,7 @@ def get_event_files(path, verbose=True):
 
 
 def load_messages_from_event_file(event_file):
-    """parse remote path and address from a kwik event file"""
+    """parse remote path and address from a kwik or binary format event file"""
 
     import h5py
 
