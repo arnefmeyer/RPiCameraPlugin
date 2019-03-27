@@ -32,6 +32,7 @@ except ImportError:
 def copy_data(path=None,
               user=None,
               address=None,
+              verbose=False,
               **kargs):
 
     assert path is not None
@@ -57,7 +58,8 @@ def copy_data(path=None,
             try:
                 rpu.scp(user, remote_address,
                         op.join(dd['path'], '*.{h264,csv,json}'),
-                        f['recording_path'])
+                        f['recording_path'],
+                        verbose=verbose)
             except BaseException:
                 traceback.print_exc()
 
@@ -65,7 +67,7 @@ def copy_data(path=None,
 def copy_func(args):
 
     try:
-        rpu.scp(args[0], args[1], args[2], args[3])
+        rpu.scp(args[0], args[1], args[2], args[3], verbose=args[4])
     except BaseException:
         traceback.print_exc()
 
@@ -73,7 +75,8 @@ def copy_func(args):
 def copy_data_parallel(path=None,
                        user=None,
                        address=None,
-                       workers=4):
+                       workers=4,
+                       verbose=False):
     # the RPi's slow wifi can be a bottleneck so let's do things in parallel
 
     from multiprocessing import Pool
@@ -102,7 +105,8 @@ def copy_data_parallel(path=None,
             all_data.append((user,
                              remote_address,
                              op.join(dd['path'], '*.{h264,csv,json}'),
-                             f['recording_path']))
+                             f['recording_path'],
+                             verbose))
 
     pool = Pool(processes=workers)
     pool.map(copy_func, all_data)
@@ -119,6 +123,7 @@ if __name__ == '__main__':
                         help='IP address', default=None)
     parser.add_argument('-p', '--parallel', action='store_true')
     parser.add_argument('-w', '--workers', default=4)
+    parser.add_argument('-v', '--verbose', action='store_true')
 
     args = vars(parser.parse_args())
 

@@ -251,6 +251,7 @@ class Controller(object):
 
             if fix_awb_gains:
                 gains = self.camera.awb_gains
+                print("fixing awb gains:", gains)
                 self.camera.awb_mode = 'off'
                 self.camera.awb_gains = gains
 
