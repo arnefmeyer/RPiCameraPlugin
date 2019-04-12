@@ -1,5 +1,9 @@
 # RPiCamera
 
+<p align="center">
+<img src="docs/images/screenshot.jpg" width="50%">
+</p>
+
 A plugin for the [open-ephys plugin-GUI](https://github.com/open-ephys/plugin-GUI/) to control a [Raspberry Pi (RPi)](https://www.raspberrypi.org/) camera over network. The camera is controlled locally on the RPi and communication between the recording system and the RPi is done via [zeromq](http://zeromq.org/). The system has successfully been tested with RPi versions 2 and 3 (model B) and the following camera modules:
 
 * [Camera Module V2](https://www.raspberrypi.org/products/camera-module-v2/)
@@ -49,6 +53,19 @@ the all plugins as described in the [wiki](https://open-ephys.atlassian.net/wiki
 ## Running the RPi camera code
 
 Either connect the RPi to a monitor and use the graphical login or log into the RPi via ssh, e.g., _ssh pi@1.2.3.4_ (where pi and 1.2.3.4 are user name and IP address of your RPi, respectively). Then run start the script "rpi_host.py" as described in the rpicamera package.
+
+
+## Plugin controls
+
+- **Port:** the zeromq port which must be the same as on the Raspberry Pi (currently fixed to 5555; see file _Python/rpicamera/controller.py_)
+- **Address:** The IP address of the Raspberry Pi (e.g., 1.2.3.10 in the image above)
+- **Connect:** Connect to the Raspberry Pi. This has to be done at the beginning of each recording session.
+- **Resolution:** The camera resolution
+- **FPS:** Frames per second
+- **Zoom:** Sets the zoom applied to the camera's input. The values (left, bottom, width, height) ranging from 0 to 100 indicate the proportion of the image (in percent) to include in the output (aka "Region of Interest"). 
+- **R:** Reinitialize automatic gain and white level balance. This can be useful if the illuminance changed after starting the "rpi_host.py" script
+- **H:** Enable/disable horizontal image flip
+- **V:** Enable/disable vertical image flip
 
 
 ## How to contribute
