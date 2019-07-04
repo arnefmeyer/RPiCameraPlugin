@@ -18,6 +18,7 @@ import time
 import os
 import os.path as op
 import traceback
+import threading
 from functools import partial
 
 import picamera
@@ -35,18 +36,19 @@ except ImportError:
 
 class VideoEncoderGPIO(picamera.PiVideoEncoder):
 
-    def __init__(self, *args,
-                 use_strobe=True,
-                 strobe_pin=11,
-                 trigger_length=.001,
+    def __init__(self,
+                 *args,
                  **kwargs):
+
+        use_strobe = kwargs.pop('use_strobe', True)
+        strobe_pin = kwargs.pop('strobe_pin', 11)
+        strobe_length = kwargs.pop('strobe_length', .001)
 
         super(VideoEncoderGPIO, self).__init__(*args, **kwargs)
 
         self.use_strobe = use_strobe
-        self.strobe_mode = strobe_mode
         self.strobe_pin = strobe_pin
-        self.strobe_length = trigger_length
+        self.strobe_length = strobe_length
 
         self.frame_count = 0
         self.strobe_count = 0
@@ -88,7 +90,7 @@ class VideoEncoderGPIO(picamera.PiVideoEncoder):
                     if self.use_strobe:
 
                         GPIO.output(self.strobe_pin, True)
-                        time.sleep(self.trigger_length)
+                        time.sleep(self.strobe_length)
                         GPIO.output(self.strobe_pin, False)
 
                         self.strobe_count += 1
@@ -167,7 +169,7 @@ class CameraGPIO(picamera.PiCamera):
     def _get_video_encoder(self, *args, **kwargs):
 
         encoder = VideoEncoderGPIO(self, *args,
-                                   use_strobe=self.use_strobe,
+                                   use_strobe=self.sync_mode == 'strobe',
                                    strobe_pin=self.strobe_pin,
                                    **kwargs)
 
@@ -176,24 +178,6 @@ class CameraGPIO(picamera.PiCamera):
     def start_recording(self, output, **kwargs):
 
         assert self.sync_mode in ['strobe', 'trigger']
-
-        if GPIO_AVAILABLE:
-
-            assert strobe_pin is not None
-
-            if self.sync_mode == 'strobe':
-                print("Camera: using GPIO pin {} as strobe output".format(self.strobe_pin))
-                GPIO.setup(self.strobe_pin, GPIO.OUT,
-                           initial=GPIO.LOW)
-
-            elif self.sync_mode == 'trigger':
-                print("Camera: using GPIO pin {} as sync input".format(self.strobe_pin))
-                GPIO.setup(self.strobe_pin, GPIO.IN)
-                GPIO.setup(channel, GPIO.IN,
-                           pull_up_down=GPIO.PUD_DOWN)
-                GPIO.add_event_detect(self.strobe_pin,
-                                      GPIO.RISING,
-                                      callback=self._trigger_callback)
 
         # file for camera frame timestamps (and strobe timestamps
         # if sync_mode == 'internal')
@@ -209,20 +193,39 @@ class CameraGPIO(picamera.PiCamera):
 
         if self.sync_mode == 'strobe':
             # RPi will generate a strobe sync signal
+
+            if GPIO_AVAILABLE:
+
+                print("Camera: using GPIO pin {} as strobe output".format(self.strobe_pin))
+                GPIO.setup(self.strobe_pin, GPIO.OUT,
+                           initial=GPIO.LOW)
+
             super(CameraGPIO, self).start_recording(output, **kwargs)
 
         else:
-            # use external trigger pulses for synchronization
-            trigger_file_path = op.splitext(self.file_path)[0] + '_timestamps_trigger.csv'
+            # use external trigger pulses for synchronization; first set up file for
+            # saving external trigger time stamps
+            trigger_file_path = op.splitext(output)[0] + '_timestamps_trigger.csv'
             try:
                 self.trigger_file = open(trigger_file_path, 'w')
                 self.trigger_file.write(
-                    '# external sync time stamp (system clock), external sync time stamp (camera clock)\n')
+                    '# external sync time stamp (camera clock; in microseconds)\n')
                 print("Saving external trigger timestamps to:", trigger_file_path)
 
             except BaseException:
                 print("Could not open time stamp file:", trigger_file_path)
                 traceback.print_exc()
+
+            if GPIO_AVAILABLE:
+
+                print("Camera: using GPIO pin {} as sync input".format(self.strobe_pin))
+                GPIO.setup(self.strobe_pin, GPIO.IN,
+                           pull_up_down=GPIO.PUD_DOWN)
+                GPIO.add_event_detect(self.strobe_pin,
+                                      GPIO.RISING,
+                                      callback=partial(self._trigger_callback,
+                                                       output,
+                                                       kwargs))
 
             if self.wait_for_trigger:
                 # wait for trigger to start recording and stop recording when
@@ -230,17 +233,21 @@ class CameraGPIO(picamera.PiCamera):
                 # triggers will be handled by the GPIO event detection callback
                 # and we will use a separate thread to take care of the trigger
                 # timeout.
+
                 self._start_on_next_trigger = True
                 self._last_trigger_ts = None
 
                 self._stop_event = threading.Event()
-                self._timer_thread = TimerThread(interval=.1)
+                self._timer_thread = TimerThread(self._stop_event,
+                                                 self.check_trigger_condition,
+                                                 interval=.1)
+                self._timer_thread.start()
 
             else:
                 self._start_on_next_trigger = False
                 super(CameraGPIO, self).start_recording(output, **kwargs)
 
-    def _trigger_callback(self, output, pin):
+    def _trigger_callback(self, output, cam_kwargs, pin):
 
         # get current time stamp from camera firmware and append to file
         t0 = self.timestamp
@@ -248,8 +255,11 @@ class CameraGPIO(picamera.PiCamera):
         with self.lock:
             self._last_trigger_ts = t0
 
+        print(t0 / 1000000.)
+
         if self.wait_for_trigger and self._start_on_next_trigger:
-            super(CameraGPIO, self).start_recording(output, **kwargs)
+            print("Received trigger signal. Starting recording now.")
+            super(CameraGPIO, self).start_recording(output, **cam_kwargs)
             self._start_on_next_trigger = False
 
     def get_time_since_last_trigger(self):
@@ -273,14 +283,20 @@ class CameraGPIO(picamera.PiCamera):
                 if self._stop_event is not None:
                     self._stop_event.set()
 
+                print("Trigger timeout exceeded. Stopping recording.")
                 self.stop_recording()
+
+    @property
+    def waiting_for_trigger(self):
+
+        return self._start_on_next_trigger
 
     def stop_recording(self):
 
         if GPIO_AVAILABLE and self.sync_mode == 'trigger':
             GPIO.remove_event_detect(self.strobe_pin)
 
-        if self._stop_event is not None:
+        if self._stop_event is not None and not self._stop_event.is_set():
             self._stop_event.set()
 
         if self.ts_file is not None:

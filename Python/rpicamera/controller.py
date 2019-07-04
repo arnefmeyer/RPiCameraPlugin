@@ -325,9 +325,9 @@ class Controller(object):
                       'width': self.camera.resolution.width,
                       'height': self.camera.resolution.height,
                       'framerate': float(self.camera.framerate),
-                      'sync_mode': self.sync_mode,
-                      'wait_for_trigger': self.wait_for_trigger,
-                      'trigger_timeout': self.trigger_timeout}
+                      'sync_mode': self.camera.sync_mode,
+                      'wait_for_trigger': self.camera.wait_for_trigger,
+                      'trigger_timeout': self.camera.trigger_timeout}
 
             with open(param_file, 'w') as f:
                 json.dump(params, f, indent=4,
