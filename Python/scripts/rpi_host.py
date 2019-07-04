@@ -44,12 +44,15 @@ def run_plugin(output=None,
                quality=23,
                strobe_pin=11,
                zoom=(0, 0, 1, 1),
+               sync_mode='strobe',
                **kwargs):
+
+    assert sync_mode in ['strobe', 'trigger']
 
     if output is None:
         output = op.join(op.split(op.realpath(__file__))[0], 'RPiCameraVideos')
     else:
-        output = op.expanduser(output)
+        output = op.realpath(op.expanduser(output))
 
     if not op.exists(output):
         os.makedirs(output)
@@ -62,6 +65,7 @@ def run_plugin(output=None,
                             resolution=(width, height),
                             strobe_pin=strobe_pin,
                             zoom=zoom,
+                            sync_mode=sync_mode,
                             **kwargs)
 
     print("Starting preview and warming up camera for 2 seconds")
@@ -80,37 +84,37 @@ def run_plugin(output=None,
     def close_cam():
         controller.close()
 
-    def set_parameter(name, value):
+    def set_parameter(param, value):
 
-        if name == 'Framerate':
+        if param == 'Framerate':
             print("Setting frame rate to: {} Hz".format(value)),
             controller.framerate = value
 
-        elif name == 'Resolution':
+        elif param == 'Resolution':
             print("Setting resolution to: {}".format(value)),
             controller.resolution = value
 
-        elif name == 'VFlip':
+        elif param == 'VFlip':
             print("Setting vflip to: {}".format(value)),
             controller.vflip = value
 
-        elif name == 'HFlip':
+        elif param == 'HFlip':
             print("Setting hflip to: {}".format(value)),
             controller.hflip = value
 
-        elif name == 'ResetGains':
+        elif param == 'ResetGains':
             print("Resetting camera gains")
             controller.reset_gains()
 
-        elif name == 'Stop':
+        elif param == 'Stop':
             print("Stopping camera")
             controller.stop_recording()
 
-        elif name == 'Close':
+        elif param == 'Close':
             print("Closing camera")
             controller.close()
 
-        elif name == 'Zoom':
+        elif param == 'Zoom':
             print("Setting zoom to:", value)
             controller.zoom = value
 
@@ -141,6 +145,8 @@ def run_standalone(output=None,
                    update_interval=5,
                    verbose=True,
                    zoom=(0, 0, 1, 1),
+                   sync_mode='strobe',
+                   wait_for_trigger=True,
                    **kwargs):
     """run camera in standalone mode (i.e. without open-ephys plugin)
 
@@ -149,10 +155,12 @@ def run_standalone(output=None,
 
     """
 
+    assert sync_mode in ['strobe', 'trigger']
+
     if output is None:
         output = op.join(op.split(__file__)[0], 'RPiCamera_test')
     else:
-        output = op.expanduser(output)
+        output = op.realpath(op.expanduser(output))
 
     if not op.exists(output):
         os.makedirs(output)
@@ -164,10 +172,14 @@ def run_standalone(output=None,
                             framerate=framerate,
                             resolution=(width, height),
                             strobe_pin=strobe_pin,
-                            zoom=zoom)
+                            zoom=zoom,
+                            sync_mode=sync_mode,
+                            wait_for_trigger=wait_for_trigger,
+                            **kwargs)
 
     print("Starting preview and warming up camera for 2 seconds")
-    controller.start_preview(warmup=2., fix_awb_gains=True)
+    controller.start_preview(warmup=2.,
+                             fix_awb_gains=True)
     time.sleep(2)
 
     print("Starting recording")
@@ -181,34 +193,53 @@ def run_standalone(output=None,
                                path=filename,
                                quality=quality)
 
-    t_start = time.time()
-    try:
-        while True:
+    if sync_mode == 'trigger' and wait_for_trigger:
+        # starting and stopping of recording will be controlled
+        # by external hardware trigger
+        time.sleep(1.)
+        try:
+            while controller.is_recording:
+                time.sleep(.1)
 
-            t_elapsed = time.time() - t_start
-            if timeout > 0 and t_elapsed >= timeout:
-                break
+        except KeyboardInterrupt:
+            print("Keyboard interrupt. Cleaning up and exiting.")
 
-            time.sleep(update_interval)
-            if verbose:
-                print("{}/{} seconds".format(t_elapsed, timeout))
+        finally:
+            controller.close()
 
-    except KeyboardInterrupt:
-        print("Keyboard interrupt. Cleaning up and exiting.")
+    else:
 
-    finally:
-        print("Stopping recording")
-        controller.stop_recording()
+        t_start = time.time()
+        try:
+            while True:
 
-        time.sleep(1)
+                t_elapsed = time.time() - t_start
+                if t_elapsed >= timeout > 0:
+                    break
 
-        print("closing camera")
-        controller.close()
+                time.sleep(update_interval)
+                if verbose:
+                    print("{}/{} seconds".format(t_elapsed, timeout))
+
+        except KeyboardInterrupt:
+            print("Keyboard interrupt. Cleaning up and exiting.")
+
+        finally:
+            print("Stopping recording")
+            controller.stop_recording()
+
+            time.sleep(1)
+
+            print("closing camera")
+            controller.close()
 
 
 class ParserCreator(object):
 
     def __init__(self):
+
+        self._parser = None
+        self._subparsers = None
 
         self.create_main()
         self.create_standalone()
@@ -217,38 +248,53 @@ class ParserCreator(object):
     def create_main(self):
 
         self._parser = argparse.ArgumentParser()
-        self._add_options(self._parser)
+        self._add_options()
         self._subparsers = self._parser.add_subparsers(dest='command',
                                                        title='subcommand')
 
-    def _add_options(self, parser):
+    def _add_options(self, p):
 
-        parser.add_argument('--width', '-x', default=640, type=int,
-                            help='frame width')
-        parser.add_argument('--height', '-y', default=480, type=int,
-                            help='frame height')
-        parser.add_argument('--framerate', '-f', default=30, type=float,
-                            help='frame rate (in Hz)')
-        parser.add_argument('--output', '-o', default=None,
-                            help='recording path')
-        parser.add_argument('--name', '-n', default='rpicamera_video',
-                            help='video file base name')
-        parser.add_argument('--strobe-pin', '-p', default=11, type=int,
-                            help='GPIO strobe pin')
-        parser.add_argument('--quality', '-q', default=23, type=int,
-                            help='video quality: 1 (good) <= q <= 40 (bad)'
-                                 ' (default: 23)')
-        parser.add_argument('--vflip', '-V', action="store_true",
-                            default=False,
-                            help='apply vertical flip to camera image')
-        parser.add_argument('--hflip', '-H', action="store_true",
-                            default=False,
-                            help='apply horizontal flip to camera image')
-        parser.add_argument('--zoom', '-z', default=(0, 0, 1, 1),
-                            type=float, nargs=4,
-                            help='camera zoom (aka ROI):'
-                                 ' left bottom right top. All values are'
-                                 ' normalized coordinates, i.e. [0, 1]')
+        p.add_argument('--width', '-x', default=640, type=int,
+                       help='frame width')
+        p.add_argument('--height', '-y', default=480, type=int,
+                       help='frame height')
+        p.add_argument('--framerate', '-f', default=30, type=float,
+                       help='frame rate (in Hz)')
+        p.add_argument('--output', '-o', default=None,
+                       help='recording path')
+        p.add_argument('--name', '-n', default='rpicamera_video',
+                       help='video file base name')
+        p.add_command('--sync-mode', '-m', default='strobe',
+                      help='Synchronization mode; can be either "strobe" for '
+                           'CMOS pulses generated by the RPi (GPIO) or '
+                           '"trigger" for recording external trigger pulses. '
+                           'Note that the GPIO pin will be for both modes will '
+                           'be set via the "strobe-pin" option.')
+        p.add_argument('--wait-for-trigger', '-w',
+                       const=True, default=False,
+                       help='Wait for first external trigger to start recording? '
+                            '(only used in "trigger" sync mode)')
+        p.add_argument('--trigger-timeout', '-T',
+                       default=1.,
+                       help='Stop recording when receiving no external trigger for '
+                            'the given amount of time (in seconds). '
+                            '(only used in "trigger" sync mode)')
+        p.add_argument('--strobe-pin', '-p', default=11, type=int,
+                       help='GPIO strobe pin (also used for external sync)')
+        p.add_argument('--quality', '-q', default=23, type=int,
+                       help='video quality: 1 (good) <= q <= 40 (bad)'
+                            ' (default: 23)')
+        p.add_argument('--vflip', '-V', action="store_true",
+                       default=False,
+                       help='apply vertical flip to camera image')
+        p.add_argument('--hflip', '-H', action="store_true",
+                       default=False,
+                       help='apply horizontal flip to camera image')
+        p.add_argument('--zoom', '-z', default=(0, 0, 1, 1),
+                       type=float, nargs=4,
+                       help='camera zoom (aka ROI):'
+                            ' left bottom right top. All values are'
+                            ' normalized coordinates, i.e. [0, 1]')
 
     def _add_sub_parser(self, name, desc):
 

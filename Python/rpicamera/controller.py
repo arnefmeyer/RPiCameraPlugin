@@ -47,18 +47,27 @@ class ZmqThread(threading.Thread):
 
         self.is_running = False
         self.daemon = True
+        self.lock = threading.Lock()
 
     def stop_running(self):
 
-        self.is_running = False
+        with self.lock:
+            self.is_running = False
 
     def run(self):
 
-        self.is_running = True
+        with self.lock:
 
-        socket = self.socket
+            self.is_running = True
+            socket = self.socket
 
-        while self.is_running:
+        while True:
+
+            with self.lock:
+                should_exit = not self.is_running
+
+            if should_exit:
+                break
 
             msg = socket.recv()
             parts = msg.split()
@@ -135,11 +144,13 @@ class ZmqThread(threading.Thread):
 
 class Controller(object):
 
-    def __init__(self, data_path, **kwargs):
+    def __init__(self, data_path,
+                 **kwargs):
 
         super(Controller, self).__init__()
 
         self.data_path = data_path
+
         self.closed = False
 
         try:
@@ -214,6 +225,11 @@ class Controller(object):
             if len(coords) == 4 and min(coords) >= 0 and max(coords) <= 1:
                 self.camera.zoom = coords
 
+    @property
+    def is_recording(self):
+
+        return self.camera is not None and self.camera.recording
+
     def cleanup(self):
 
         if self.camera is not None:
@@ -236,7 +252,9 @@ class Controller(object):
 
         self.closed = True
 
-    def start_preview(self, warmup=2., fix_awb_gains=True,
+    def start_preview(self,
+                      warmup_time=2.,
+                      fix_awb_gains=True,
                       fix_exposure_speed=True):
 
         if self.camera is not None:
@@ -247,7 +265,7 @@ class Controller(object):
             self.camera.start_preview()
 
             # wait for camera to "warm up"
-            time.sleep(warmup)
+            time.sleep(warmup_time)
 
             if fix_awb_gains:
                 gains = self.camera.awb_gains
@@ -259,8 +277,7 @@ class Controller(object):
                 self.camera.shutter_speed = self.camera.exposure_speed
                 self.camera.exposure_mode = 'off'
 
-    def reset_gains(self, warmup=2., fix_awb_gains=True,
-                    fix_exposure_speed=True):
+    def reset_gains(self, **kwargs):
 
         if self.camera is not None:
 
@@ -270,14 +287,17 @@ class Controller(object):
             was_previewing = self.camera.previewing
             if self.camera.previewing:
                 self.camera.stop_preview()
+                time.sleep(.1)
 
             if was_previewing:
-                self.start_preview(warmup=warmup,
-                                   fix_awb_gains=fix_awb_gains,
-                                   fix_exposure_speed=fix_exposure_speed)
+                self.start_preview(**kwargs)
 
-    def start_recording(self, filename='rpicamera_video', experiment=0,
-                        recording=1, path='None', quality=23):
+    def start_recording(self,
+                        filename='rpicamera_video',
+                        experiment=0,
+                        recording=1,
+                        path='None',
+                        quality=25):
 
         # TODO: add network stream output
         if self.camera is not None and not self.camera.recording:
@@ -304,7 +324,10 @@ class Controller(object):
                       'video_path': video_path,
                       'width': self.camera.resolution.width,
                       'height': self.camera.resolution.height,
-                      'framerate': float(self.camera.framerate)}
+                      'framerate': float(self.camera.framerate),
+                      'sync_mode': self.sync_mode,
+                      'wait_for_trigger': self.wait_for_trigger,
+                      'trigger_timeout': self.trigger_timeout}
 
             with open(param_file, 'w') as f:
                 json.dump(params, f, indent=4,
@@ -322,7 +345,7 @@ class Controller(object):
 
     def stop_recording(self):
 
-        if self.camera is not None and self.camera.recording:
+        if self.is_recording:
 
             print("Controller: stopping recording")
             self.camera.stop_recording()
