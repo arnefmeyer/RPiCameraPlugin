@@ -163,7 +163,7 @@ class CameraGPIO(picamera.PiCamera):
 
     def __del__(self):
 
-        if GPIO_AVAILABLE and self.use_strobe:
+        if GPIO_AVAILABLE and self.sync_mode == 'strobe':
             GPIO.cleanup()
 
     def _get_video_encoder(self, *args, **kwargs):

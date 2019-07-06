@@ -37,7 +37,9 @@ const int MAX_MESSAGE_LENGTH = 16000;
 #endif
 
 RPiCam::RPiCam()
-    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPath(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false), zoom{0, 0, 100, 100}
+    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), 
+    sendRecPath(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false), 
+    zoom{0, 0, 100, 100}, gains{-1, -1}
 
 {
     setProcessorType (PROCESSOR_TYPE_SOURCE);
@@ -189,6 +191,7 @@ void RPiCam::sendCameraParameters()
 	{
 		setResolution(width, height);
 		setFramerate(framerate);
+		setGains();
 	}
 }
 
@@ -199,6 +202,60 @@ void RPiCam::resetGains()
 	{
 		String msg("ResetGains");
 		sendMessage(msg, 1000);
+	}
+}
+
+
+void RPiCam::getGains(double *gains_, bool update)
+{
+	if (update)
+	{
+		getGains();
+	}
+
+	for (int i=0; i<2; i++)
+	{
+		gains_[i] = gains[i];
+	}
+}
+
+
+void RPiCam::getGains()
+{
+	String msg("GetGains");
+	String response = sendMessage(msg, 1000);
+
+	StringArray tokens;
+	tokens.addTokens(response, true);
+	for (int i=0; i<2; i++)
+	{
+		gains[i] = tokens[i].getDoubleValue();
+	}
+}
+
+
+void RPiCam::setGains()
+{
+	if ((gains[0] > 0) && (gains[0] <= 8)&& (gains[1] > 0) && (gains[1] <= 8))
+	{
+		String msg("SetGains");
+		msg += String(" ") + String(gains[0]);
+		msg += String(" ") + String(gains[1]);
+		sendMessage(msg, 1000);
+	}
+}
+
+
+void RPiCam::setGains(double *gains_, bool update)
+{
+	for (int i=0; i<2; i++)
+	{
+		gains[i] = gains_[i];
+	}
+
+	if (update)
+	{
+		setGains();
 	}
 }
 
@@ -353,7 +410,7 @@ void RPiCam::startRecording()
 	msg += String(" Recording=") + String(recNumber);
 	msg += String(" Path=") + recPath;
 
-	rpiRecPath = sendMessage(msg);
+	rpiRecPath = sendMessage(msg, 1000);
     sendRecPath = true;
 
 	RPiCamEditor* e = (RPiCamEditor*)getEditor();
@@ -414,8 +471,13 @@ void RPiCam::saveCustomParametersToXml(XmlElement* parentElement)
     XmlElement* mainNode = parentElement->createNewChildElement("RPiCam");
 	mainNode->setAttribute("address", address);
     mainNode->setAttribute("port", port);
+    mainNode->setAttribute("width", width);
+    mainNode->setAttribute("height", height);
+    mainNode->setAttribute("framerate", framerate);
 	mainNode->setAttribute("hflip", hflip);
 	mainNode->setAttribute("vflip", vflip);
+	mainNode->setAttribute("gain1", gains[0]);
+	mainNode->setAttribute("gain2", gains[1]);
 	mainNode->setAttribute("x1", zoom[0]);
 	mainNode->setAttribute("y1", zoom[1]);
 	mainNode->setAttribute("x2", zoom[2]);
@@ -436,6 +498,11 @@ void RPiCam::loadCustomParametersFromXml()
                 setAddress(mainNode->getStringAttribute("address"), false);
 				setPort(mainNode->getIntAttribute("port"), false);
 
+				if (mainNode->hasAttribute("framerate"))
+				{
+					framerate = mainNode->getIntAttribute("framerate");
+				}
+
 				if (mainNode->hasAttribute("hflip"))
 				{
 					hflip = mainNode->getBoolAttribute("hflip");
@@ -444,6 +511,12 @@ void RPiCam::loadCustomParametersFromXml()
 				if (mainNode->hasAttribute("vflip"))
 				{
 					vflip = mainNode->getBoolAttribute("vflip");
+				}
+
+				if (mainNode->hasAttribute("gain1") && mainNode->hasAttribute("gain2"))
+				{
+					gains[0] = mainNode->getDoubleAttribute("gain1");
+					gains[1] = mainNode->getDoubleAttribute("gain2");
 				}
 
 				if (mainNode->hasAttribute("x1"))

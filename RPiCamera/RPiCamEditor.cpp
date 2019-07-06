@@ -33,7 +33,7 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
     : GenericEditor(parentNode, useDefaultParameterEditors)
 
 {
-	desiredWidth = 280;
+	desiredWidth = 350;
 
 	RPiCam *p= (RPiCam *)getProcessor();
 
@@ -60,7 +60,7 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
     addAndMakeVisible(addressLabel);
 
 	addressEdit = new Label("Address", p->getAddress());
-    addressEdit->setBounds(75,50,120+80,20);
+    addressEdit->setBounds(75,50,120+20,20);
     addressEdit->setFont(Font("Default", 15, Font::plain));
     addressEdit->setColour(Label::textColourId, Colours::white);
 	addressEdit->setColour(Label::backgroundColourId, Colours::grey);
@@ -70,11 +70,11 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 
 	// frame rate (values depend on camera format)
     fpsLabel = new Label("FPS", "FPS:");
-    fpsLabel->setBounds(185,75,65,20);
+    fpsLabel->setBounds(175,75,65,20);
     addAndMakeVisible(fpsLabel);
 
 	fpsCombo = new ComboBox();
-    fpsCombo->setBounds(225,75,50,20);
+    fpsCombo->setBounds(215,75,50,20);
     fpsCombo->addListener(this);
 	addAndMakeVisible(fpsCombo);
 
@@ -104,30 +104,53 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 	resolutionCombo->setSelectedItemIndex(camFormats.size()-1, sendNotification);
 	addAndMakeVisible(resolutionCombo);
 
+	// AWB gain settings
+	awbLabel = new Label("AWB", "Gains:");
+    awbLabel->setBounds(280,25,70,20);
+    awbLabel->setTooltip("White level balance gains");
+    addAndMakeVisible(awbLabel);
+
 	// re-initialization
 	resetButton = new UtilityButton("R", Font("Default", 15, Font::plain));
-    resetButton->setBounds(210,25,20,20);
+    resetButton->setBounds(280,50,20,20);
     resetButton->addListener(this);
-	resetButton->setTooltip("Reinitialize automatic gain and white level balance");
+	resetButton->setTooltip("Reinitialize automatic white level balance gains");
     addAndMakeVisible(resetButton);
 
-	// horizontal flip
-	hflipButton = new UtilityButton("H", Font("Default", 15, Font::plain));
-    hflipButton->setBounds(233,25,20,20);
-    hflipButton->setClickingTogglesState(true);
-    hflipButton->setToggleState(p->getHflip(), dontSendNotification);
-    hflipButton->addListener(this);
-	hflipButton->setTooltip("Enable/disable horizontal flip");
-    addAndMakeVisible(hflipButton);
+	// retrieve current settings
+	getGainButton = new UtilityButton("G", Font("Default", 15, Font::plain));
+    getGainButton->setBounds(303,50,20,20);
+    getGainButton->addListener(this);
+	getGainButton->setTooltip("Get current white level balance gains");
+    addAndMakeVisible(getGainButton);
 
-	// vertical flip
-	vflipButton = new UtilityButton("V", Font("Default", 15, Font::plain));
-    vflipButton->setBounds(255,25,20,20);
-    vflipButton->setClickingTogglesState(true);
-    vflipButton->setToggleState(p->getVflip(), dontSendNotification);
-    vflipButton->addListener(this);
-	vflipButton->setTooltip("Enable/disable vertical flip");
-    addAndMakeVisible(vflipButton);
+	// set gains
+	setGainButton = new UtilityButton("S", Font("Default", 15, Font::plain));
+    setGainButton->setBounds(327,50,20,20);
+    setGainButton->addListener(this);
+	setGainButton->setTooltip("Set white level balance gains");
+    addAndMakeVisible(setGainButton);
+
+    // gain values
+	gain1Edit = new Label("gain1", "");
+    gain1Edit->setBounds(280,75,60,20);
+    gain1Edit->setFont(Font("Default", 15, Font::plain));
+    gain1Edit->setColour(Label::textColourId, Colours::white);
+	gain1Edit->setColour(Label::backgroundColourId, Colours::grey);
+    gain1Edit->setEditable(true);
+    gain1Edit->addListener(this);
+	addAndMakeVisible(gain1Edit);
+
+	gain2Edit = new Label("gain2", "");
+    gain2Edit->setBounds(280,100,60,20);
+    gain2Edit->setFont(Font("Default", 15, Font::plain));
+    gain2Edit->setColour(Label::textColourId, Colours::white);
+	gain2Edit->setColour(Label::backgroundColourId, Colours::grey);
+    gain2Edit->setEditable(true);
+    gain2Edit->addListener(this);
+	addAndMakeVisible(gain2Edit);
+
+	updateGains();
 
 	// zoom buttons
     zoomLabel = new Label("Zoom", "Zoom:");
@@ -140,7 +163,7 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 
 	int x0 = 85;
 	int y0 = 100;
-	int dx = 42;
+	int dx = 40;
 	int dy = 12;
 	TriangleButton *b;
 	Label *l;
@@ -167,6 +190,25 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 		addAndMakeVisible(l);
 		zoomValues.add(l);
 	}
+
+	// horizontal flip
+	hflipButton = new UtilityButton("H", Font("Default", 15, Font::plain));
+    hflipButton->setBounds(233-10,25+75,20,20);
+    hflipButton->setClickingTogglesState(true);
+    hflipButton->setToggleState(p->getHflip(), dontSendNotification);
+    hflipButton->addListener(this);
+	hflipButton->setTooltip("Enable/disable horizontal flip");
+    addAndMakeVisible(hflipButton);
+
+	// vertical flip
+	vflipButton = new UtilityButton("V", Font("Default", 15, Font::plain));
+    vflipButton->setBounds(255-10,25+75,20,20);
+    vflipButton->setClickingTogglesState(true);
+    vflipButton->setToggleState(p->getVflip(), dontSendNotification);
+    vflipButton->addListener(this);
+	vflipButton->setTooltip("Enable/disable vertical flip");
+    addAndMakeVisible(vflipButton);
+
 }
 
 
@@ -194,6 +236,25 @@ void RPiCamEditor::updateValues()
 }
 
 
+void RPiCamEditor::updateGains()
+{
+	double gains[2];
+
+	RPiCam *p= (RPiCam *)getProcessor();
+	p->getGains(&gains[0], true);
+
+	std::cout << "RPiCamEditor::updateGains" << gains[0] << " " << gains[1] << "\n";
+	if (gains[0] > 0)
+	{
+		gain1Edit->setText(String(gains[0], 6), dontSendNotification);
+	}
+	if (gains[1] > 0)
+	{
+		gain2Edit->setText(String(gains[1], 6), dontSendNotification);
+	}
+}
+
+
 void RPiCamEditor::enableControls(bool state)
 {
 	resolutionCombo->setEnabled(state);
@@ -213,6 +274,25 @@ void RPiCamEditor::buttonEvent(Button* button)
 	else if (button == resetButton)
 	{
 		p->resetGains();
+	}
+	else if (button == getGainButton)
+	{
+		updateGains();
+	}
+	else if (button == setGainButton)
+	{
+		double gains[2];
+		p->getGains(&gains[0], false);
+
+		double gain1 = gain1Edit->getText().getDoubleValue();
+		double gain2 = gain2Edit->getText().getDoubleValue();
+
+		if (gain1 > 0 && gain1 < 8 && gain2 > 0 && gain2 < 8)
+		{
+			gains[0] = gain1;
+			gains[1] = gain2;
+			p->setGains(&gains[0], true);
+		}
 	}
 	else if (button == hflipButton)
 	{
@@ -322,6 +402,8 @@ void RPiCamEditor::comboBoxChanged(ComboBox* cb)
 		int index = cb->getSelectedItemIndex();
 		int w = camFormats[index].width;
 		int h = camFormats[index].height;
+		int fps = p->getFramerate();
+
 		p->setResolution(w, h);
 
 		fpsCombo->clear();
@@ -330,7 +412,17 @@ void RPiCamEditor::comboBoxChanged(ComboBox* cb)
 		{
 			fpsCombo->addItem(String(fmt.framerate_min + i), i+1);
 		}
-		fpsCombo->setSelectedItemIndex(fmt.framerate-fmt.framerate_min, sendNotification);
+		
+		if ((fps >= fmt.framerate_min) && (fps <= fmt.framerate_max))
+		{
+			// use current frame rate
+			fpsCombo->setSelectedItemIndex(fps - fmt.framerate_min, sendNotification);
+		}
+		else
+		{
+			// set default frame rate
+			fpsCombo->setSelectedItemIndex(fmt.framerate - fmt.framerate_min, sendNotification);
+		}
 	}
 	else if (cb == fpsCombo)
 	{

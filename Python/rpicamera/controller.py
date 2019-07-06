@@ -24,6 +24,10 @@ import zmq
 
 from .camera import CameraGPIO
 
+# make sure there is a consistent float representation in
+# the json file with camera parameters
+json.encoder.FLOAT_REPR = lambda x: format(x, '.6f')
+
 
 class ZmqThread(threading.Thread):
     """Handle communication with an open-ephys plugin (or any other zmq client)
@@ -121,6 +125,16 @@ class ZmqThread(threading.Thread):
             elif cmd == 'ResetGains':
 
                 self.parameter_callback('ResetGains', None)
+                socket.send("Done")
+
+            elif cmd == 'GetGains':
+
+                gains = self.parameter_callback('GetGains', None)
+                socket.send("{:.6f} {:.6f}".format(gains[0], gains[1]))
+
+            elif cmd == 'SetGains':
+
+                self.parameter_callback('SetGains', [float(parts[1]), float(parts[2])])
                 socket.send("Done")
 
             elif cmd == 'VFlip':
@@ -254,12 +268,20 @@ class Controller(object):
 
     def start_preview(self,
                       warmup_time=2.,
+                      awb_gains=None,
                       fix_awb_gains=True,
                       fix_exposure_speed=True):
 
         if self.camera is not None:
 
-            self.camera.awb_mode = 'auto'
+            if awb_gains is not None:
+                print("Using user-defined white balance gains:", awb_gains)
+                self.camera.awb_mode = 'off'
+                self.camera.awb_gains = awb_gains
+
+            else:
+                self.camera.awb_mode = 'auto'
+
             self.camera.exposure_mode = 'auto'
 
             self.camera.start_preview()
@@ -267,9 +289,10 @@ class Controller(object):
             # wait for camera to "warm up"
             time.sleep(warmup_time)
 
-            if fix_awb_gains:
+            if awb_gains is None and fix_awb_gains:
+
                 gains = self.camera.awb_gains
-                print("fixing awb gains:", gains)
+                print("Fixing automatic white balance gains:", gains)
                 self.camera.awb_mode = 'off'
                 self.camera.awb_gains = gains
 
@@ -291,6 +314,17 @@ class Controller(object):
 
             if was_previewing:
                 self.start_preview(**kwargs)
+
+    def get_gains(self):
+
+        if self.camera is not None:
+            return [float(g) for g in self.camera.awb_gains]
+
+    def set_gains(self, gains):
+
+        if self.camera is not None:
+            self.camera.awb_mode = 'off'
+            self.camera.awb_gains = gains
 
     def start_recording(self,
                         filename='rpicamera_video',
@@ -327,7 +361,14 @@ class Controller(object):
                       'framerate': float(self.camera.framerate),
                       'sync_mode': self.camera.sync_mode,
                       'wait_for_trigger': self.camera.wait_for_trigger,
-                      'trigger_timeout': self.camera.trigger_timeout}
+                      'trigger_timeout': self.camera.trigger_timeout,
+                      'awb_mode': self.camera.awb_mode,
+                      'awb_gains': [float(g) for g in self.camera.awb_gains],
+                      'brightness': self.camera.brightness,
+                      'zoom': self.camera.zoom,
+                      'vflip': self.camera.vflip,
+                      'hflip': self.camera.hflip
+                      }
 
             with open(param_file, 'w') as f:
                 json.dump(params, f, indent=4,

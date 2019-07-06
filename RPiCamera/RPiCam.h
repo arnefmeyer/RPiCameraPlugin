@@ -83,6 +83,10 @@ public:
 	void setZoom(int z[4]);
 	void getZoom(int *z);
 	void resetGains();
+	void getGains();
+	void getGains(double *gains, bool update = false);
+	void setGains();
+	void setGains(double *gains, bool update = false);
 
 	void sendCameraParameters();
 
@@ -115,6 +119,7 @@ private:
 	bool hflip;
 	int zoom[4];
 	bool isRecording;
+	double gains[2];
 
 	const EventChannel* messageChannel{ nullptr };
 	Time timer;

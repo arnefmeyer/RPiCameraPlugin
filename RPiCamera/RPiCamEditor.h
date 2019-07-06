@@ -74,6 +74,7 @@ public:
 	void comboBoxChanged(ComboBox* cb);
 
 	void updateValues();
+	void updateGains();
 
 	void enableControls(bool state);
 
@@ -95,9 +96,15 @@ private:
 	ScopedPointer<ComboBox> fpsCombo;
 
 	ScopedPointer<UtilityButton> connectButton;
-	ScopedPointer<UtilityButton> resetButton;
 	ScopedPointer<UtilityButton> vflipButton;
 	ScopedPointer<UtilityButton> hflipButton;
+
+	ScopedPointer<Label> awbLabel;
+	ScopedPointer<UtilityButton> resetButton;
+	ScopedPointer<UtilityButton> getGainButton;
+	ScopedPointer<UtilityButton> setGainButton;
+	ScopedPointer<Label> gain1Edit;
+	ScopedPointer<Label> gain2Edit;
 
 	ScopedPointer<Label> zoomLabel;
 	OwnedArray<Label> zoomValues;

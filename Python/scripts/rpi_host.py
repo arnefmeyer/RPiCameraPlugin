@@ -39,12 +39,10 @@ except ImportError:
 def run_plugin(output=None,
                width=640,
                height=480,
-               framerate=30.,
                name='rpicamera_video',
                quality=23,
-               strobe_pin=11,
-               zoom=(0, 0, 1, 1),
                sync_mode='strobe',
+               awb_gains=None,
                **kwargs):
 
     assert sync_mode in ['strobe', 'trigger']
@@ -61,15 +59,13 @@ def run_plugin(output=None,
 
     print("Opening controller and camera")
     controller = Controller(output,
-                            framerate=framerate,
                             resolution=(width, height),
-                            strobe_pin=strobe_pin,
-                            zoom=zoom,
                             sync_mode=sync_mode,
                             **kwargs)
 
     print("Starting preview and warming up camera for 2 seconds")
     controller.start_preview(warmup_time=2.,
+                             awb_gains=awb_gains,
                              fix_awb_gains=True)
 
     def start_cam(exp, rec, path):
@@ -107,6 +103,14 @@ def run_plugin(output=None,
             print("Resetting camera gains")
             controller.reset_gains()
 
+        elif param == 'GetGains':
+            print("Retrieving camera gains")
+            return controller.get_gains()
+
+        elif param == 'SetGains':
+            print("Setting camera white balance gains to:", value)
+            controller.set_gains(value)
+
         elif param == 'Stop':
             print("Stopping camera")
             controller.stop_recording()
@@ -138,16 +142,13 @@ def run_plugin(output=None,
 def run_standalone(output=None,
                    width=640,
                    height=480,
-                   framerate=30.,
                    timeout=600,
-                   strobe_pin=11,
                    name='test',
                    quality=23,
                    update_interval=5,
                    verbose=True,
-                   zoom=(0, 0, 1, 1),
+                   awb_gains=None,
                    sync_mode='strobe',
-                   wait_for_trigger=True,
                    **kwargs):
     """run camera in standalone mode (i.e. without open-ephys plugin)
 
@@ -171,16 +172,14 @@ def run_standalone(output=None,
     print("Opening controller and camera")
     print("  - using sync mode:", sync_mode)
     controller = Controller(output,
-                            framerate=framerate,
                             resolution=(width, height),
                             strobe_pin=strobe_pin,
-                            zoom=zoom,
                             sync_mode=sync_mode,
-                            wait_for_trigger=wait_for_trigger,
                             **kwargs)
 
     print("Starting preview and warming up camera for 2 seconds")
     controller.start_preview(warmup_time=2.,
+                             awb_gains=awb_gains,
                              fix_awb_gains=True)
     time.sleep(2)
 
@@ -298,6 +297,8 @@ class ParserCreator(object):
                        help='camera zoom (aka ROI):'
                             ' left bottom right top. All values are'
                             ' normalized coordinates, i.e. [0, 1]')
+        p.add_argument('--awb-gains', '-g', nargs=2, default=None, type=float,
+                       help='Use fixed white balance gains (default: automatic)')
 
     def _add_sub_parser(self, name, desc):
 

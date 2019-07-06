@@ -8,13 +8,18 @@
     test client for the rpicamera plugin
 """
 
+from __future__ import print_function
 
 import sys
 import zmq
 import time
+import click
 
 
-def run_example(rec_path, duration=10, address='128.40.50.22', port=5555):
+def run_example(name='recording_name',
+                duration=10,
+                address='128.40.50.22',
+                port=5555):
 
     url = "tcp://%s:%d" % (address, port)
 
@@ -28,47 +33,54 @@ def run_example(rec_path, duration=10, address='128.40.50.22', port=5555):
 
             socket.connect(url)
 
+            if sys.version_info.major == 3:
+                send_func = socket.send_string
+            else:
+                send_func = socket.send
+
             try:
 
                 msg = "Resolution {} {}".format(width, height)
-                socket.send(msg)
-                print socket.recv()
+                send_func(msg)
+                print(socket.recv())
                 time.sleep(1)
 
                 msg = "Framerate {}".format(framerate)
-                socket.send(msg)
-                print socket.recv()
+                send_func(msg)
+                print(socket.recv())
                 time.sleep(1)
 
                 msg = "Start"
                 msg += " Experiment={}".format(1)
                 msg += " Recording={}".format(1)
-                msg += " Path={}".format(rec_path)
-                socket.send(msg)
-                print socket.recv()
+                msg += " Path={}".format(name)
+                send_func(msg)
+                print(socket.recv())
 
-                print "recording for {} seconds".format(duration)
+                print("recording for {} seconds".format(duration))
                 time.sleep(duration)
 
-                socket.send("Stop")
-                print socket.recv()
+                send_func("Stop")
+                print(socket.recv())
 
-                socket.send("Close")
-                print socket.recv()
+                send_func("Close")
+                print(socket.recv())
 
             except KeyboardInterrupt:
-                print "exiting client"
+                print("exiting client")
+
+
+@click.command()
+@click.option('--address', '-a', default='1.2.3.4',
+              help='IP address of RPi')
+@click.option('--port', '-p', default=5555)
+@click.option('--name', '-n', default='recording_name',
+              help='Name of recording')
+@click.option('--duration', '-d', default=10.)
+def cli(**kwargs):
+
+    run_example(**kwargs)
 
 
 if __name__ == '__main__':
-
-    address = '128.40.50.22'
-    rec_path = 'SomeRecordingName'
-
-    # rec_path = sys.argv[1]
-
-    duration = 10
-    if len(sys.argv) > 1:
-        duration = float(sys.argv[1])
-
-    run_example(rec_path, duration=duration, address=address)
+    cli()
