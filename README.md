@@ -62,14 +62,13 @@ Either connect the RPi to a monitor and use the graphical login or log into the 
 - **Port:** the zeromq port which must be the same as on the Raspberry Pi (currently fixed to 5555; see file _Python/rpicamera/controller.py_)
 - **Address:** The IP address of the Raspberry Pi (e.g., 1.2.3.10 in the image above)
 - **Connect:** Connect to the Raspberry Pi. This has to be done at the beginning of each recording session.
-- **Resolution:** The camera resolution
+- **Resolution:** The camera resolution; for all supported sensor modes see the [picamera docs](https://picamera.readthedocs.io/en/release-1.13/fov.html#sensor-modes)
 - **FPS:** Frames per second
 - **Zoom:** Sets the zoom applied to the camera's input. The values (left, bottom, width, height) ranging from 0 to 100 indicate the proportion of the image (in percent) to include in the output (aka "Region of Interest"). 
-- **R:** Reinitialize automatic gain and white level balance. This can be useful if the illuminance changed after starting the "rpi_host.py" script
 - **H:** Enable/disable horizontal image flip
 - **V:** Enable/disable vertical image flip
 - **WB Gains:** White balance gain (red/blue) control; this can be pretty useful when initializing the camera under different luminance conditions. For a detailed description see the [picamera docs](https://picamera.readthedocs.io/en/release-1.12/api_camera.html#picamera.PiCamera.awb_gains)
-- **R:** Re-initialize the automatic white balance gains of the camera
+- **R:** Re-initialize the automatic white balance gains of the camera. This can be useful if the illuminance changed after starting the "rpi_host.py" script.
 - **G:** Get current white balance gains (should be done automatically on connect)
 - **S:** Set user-defined white balance gains (should be done automatically while entering the numbers)
 
