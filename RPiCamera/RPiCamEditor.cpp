@@ -37,12 +37,29 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 
 	RPiCam *p= (RPiCam *)getProcessor();
 
-    portLabel = new Label("Port", "Port:");
-    portLabel->setBounds(5,25,65,25);
+    addressLabel = new Label("Address", "Address");
+    addressLabel->setFont(Font("Small Text", 12, Font::plain));
+    addressLabel->setColour(Label::textColourId, Colours::darkgrey);
+    addressLabel->setBounds(5,25,65,25);
+    addAndMakeVisible(addressLabel);
+
+	addressEdit = new Label("Address", p->getAddress());
+    addressEdit->setBounds(72,25,120+23,20);
+    addressEdit->setFont(Font("Default", 15, Font::plain));
+    addressEdit->setColour(Label::textColourId, Colours::white);
+	addressEdit->setColour(Label::backgroundColourId, Colours::grey);
+    addressEdit->setEditable(true);
+    addressEdit->addListener(this);
+	addAndMakeVisible(addressEdit);
+
+    portLabel = new Label("Port", "Port");
+    portLabel->setFont(Font("Small Text", 12, Font::plain));
+    portLabel->setColour(Label::textColourId, Colours::darkgrey);
+    portLabel->setBounds(5,50,60,25);
     addAndMakeVisible(portLabel);
 
 	portEdit = new Label("Port", String(p->getPort()));
-    portEdit->setBounds(75,25,50,20);
+    portEdit->setBounds(72,50,50+20,20);
     portEdit->setFont(Font("Default", 15, Font::plain));
     portEdit->setColour(Label::textColourId, Colours::white);
 	portEdit->setColour(Label::backgroundColourId, Colours::grey);
@@ -51,26 +68,15 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 	addAndMakeVisible(portEdit);
 
 	connectButton = new UtilityButton("Connect", Font("Default", 15, Font::plain));
-    connectButton->setBounds(130,25,65,20);
+    connectButton->setBounds(130+20,50,65,20);
     connectButton->addListener(this);
     addAndMakeVisible(connectButton);
 
-    addressLabel = new Label("Address", "Address:");
-    addressLabel->setBounds(5,50,65,25);
-    addAndMakeVisible(addressLabel);
-
-	addressEdit = new Label("Address", p->getAddress());
-    addressEdit->setBounds(75,50,120+20,20);
-    addressEdit->setFont(Font("Default", 15, Font::plain));
-    addressEdit->setColour(Label::textColourId, Colours::white);
-	addressEdit->setColour(Label::backgroundColourId, Colours::grey);
-    addressEdit->setEditable(true);
-    addressEdit->addListener(this);
-	addAndMakeVisible(addressEdit);
-
 	// frame rate (values depend on camera format)
-    fpsLabel = new Label("FPS", "FPS:");
-    fpsLabel->setBounds(175,75,65,20);
+    fpsLabel = new Label("FPS", "FPS");
+    fpsLabel->setFont(Font("Small Text", 12, Font::plain));
+    fpsLabel->setColour(Label::textColourId, Colours::darkgrey);
+    fpsLabel->setBounds(177,75,65,20);
     addAndMakeVisible(fpsLabel);
 
 	fpsCombo = new ComboBox();
@@ -89,12 +95,14 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 	camFormats.add(RPiCamFormat(800, 600, 30, 1, 60));
 	camFormats.add(RPiCamFormat(640, 480, 30, 1, 90));
 
-    resolutionLabel = new Label("Resolution", "Resolution:");
-    resolutionLabel->setBounds(5,75,60,20);
+    resolutionLabel = new Label("Resolution", "Resolution");
+    resolutionLabel->setFont(Font("Small Text", 12, Font::plain));
+    resolutionLabel->setColour(Label::textColourId, Colours::darkgrey);
+    resolutionLabel->setBounds(5,75,65,20);
     addAndMakeVisible(resolutionLabel);
 
     resolutionCombo = new ComboBox();
-    resolutionCombo->setBounds(75,75,95,20);
+    resolutionCombo->setBounds(72,75,95,20);
     resolutionCombo->addListener(this);
     for (int i=0; i<camFormats.size(); i++)
     {
@@ -105,8 +113,10 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 	addAndMakeVisible(resolutionCombo);
 
 	// AWB gain settings
-	awbLabel = new Label("AWB", "Gains:");
-    awbLabel->setBounds(280,25,70,20);
+	awbLabel = new Label("Gains", "WB Gains");
+    awbLabel->setFont(Font("Small Text", 12, Font::plain));
+    awbLabel->setColour(Label::textColourId, Colours::darkgrey);
+    awbLabel->setBounds(275,25,70,20);
     awbLabel->setTooltip("White level balance gains");
     addAndMakeVisible(awbLabel);
 
@@ -119,14 +129,14 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
 
 	// retrieve current settings
 	getGainButton = new UtilityButton("G", Font("Default", 15, Font::plain));
-    getGainButton->setBounds(303,50,20,20);
+    getGainButton->setBounds(302,50,20,20);
     getGainButton->addListener(this);
 	getGainButton->setTooltip("Get current white level balance gains");
     addAndMakeVisible(getGainButton);
 
 	// set gains
 	setGainButton = new UtilityButton("S", Font("Default", 15, Font::plain));
-    setGainButton->setBounds(327,50,20,20);
+    setGainButton->setBounds(325,50,20,20);
     setGainButton->addListener(this);
 	setGainButton->setTooltip("Set white level balance gains");
     addAndMakeVisible(setGainButton);
@@ -150,10 +160,12 @@ RPiCamEditor::RPiCamEditor(GenericProcessor* parentNode, bool useDefaultParamete
     gain2Edit->addListener(this);
 	addAndMakeVisible(gain2Edit);
 
-	updateGains();
+	updateGains(false);
 
 	// zoom buttons
-    zoomLabel = new Label("Zoom", "Zoom:");
+    zoomLabel = new Label("Zoom", "Zoom");
+    zoomLabel->setFont(Font("Small Text", 12, Font::plain));
+    zoomLabel->setColour(Label::textColourId, Colours::darkgrey);
     zoomLabel->setBounds(5,100,65,25);
 	zoomLabel->setTooltip("(left, bottom, right, top) in percent");
     addAndMakeVisible(zoomLabel);
@@ -236,21 +248,40 @@ void RPiCamEditor::updateValues()
 }
 
 
-void RPiCamEditor::updateGains()
+void RPiCamEditor::updateGains(bool query)
 {
 	double gains[2];
 
 	RPiCam *p= (RPiCam *)getProcessor();
-	p->getGains(&gains[0], true);
+	p->getGains(&gains[0], query);
 
-	std::cout << "RPiCamEditor::updateGains" << gains[0] << " " << gains[1] << "\n";
-	if (gains[0] > 0)
+	std::cout << "RPiCamEditor::updateGains " << gains[0] << " " << gains[1] << "\n";
+	if (gains[0] >= 0 && gains[0] <= 8)
 	{
 		gain1Edit->setText(String(gains[0], 6), dontSendNotification);
 	}
-	if (gains[1] > 0)
+	if (gains[1] >= 0 && gains[1] <= 8)
 	{
 		gain2Edit->setText(String(gains[1], 6), dontSendNotification);
+	}
+}
+
+
+void RPiCamEditor::setGainsFromUserInput()
+{
+	double gains[2];
+
+	RPiCam *p= (RPiCam *)getProcessor();
+	p->getGains(&gains[0], false);
+
+	double gain1 = gain1Edit->getText().getDoubleValue();
+	double gain2 = gain2Edit->getText().getDoubleValue();
+
+	if ((gain1 >= 0) && (gain1 <= 8) && (gain2 >= 0) && (gain2 <= 8))
+	{
+		gains[0] = gain1;
+		gains[1] = gain2;
+		p->setGains(&gains[0], true);
 	}
 }
 
@@ -270,6 +301,7 @@ void RPiCamEditor::buttonEvent(Button* button)
 		p->closeSocket();
 		p->openSocket();
 		p->sendCameraParameters();
+		updateGains(true);
 	}
 	else if (button == resetButton)
 	{
@@ -277,22 +309,11 @@ void RPiCamEditor::buttonEvent(Button* button)
 	}
 	else if (button == getGainButton)
 	{
-		updateGains();
+		updateGains(true);
 	}
 	else if (button == setGainButton)
 	{
-		double gains[2];
-		p->getGains(&gains[0], false);
-
-		double gain1 = gain1Edit->getText().getDoubleValue();
-		double gain2 = gain2Edit->getText().getDoubleValue();
-
-		if (gain1 > 0 && gain1 < 8 && gain2 > 0 && gain2 < 8)
-		{
-			gains[0] = gain1;
-			gains[1] = gain2;
-			p->setGains(&gains[0], true);
-		}
+		setGainsFromUserInput();
 	}
 	else if (button == hflipButton)
 	{
@@ -361,6 +382,16 @@ void RPiCamEditor::labelTextChanged(juce::Label *label)
 	else if (label == addressEdit)
 	{
 		p->setAddress(label->getText());
+	}
+	else if (label == gain1Edit)
+	{
+		double g = label->getText().getDoubleValue();
+		p->setGain(0, g, true);
+	}
+	else if (label == gain2Edit)
+	{
+		double g = label->getText().getDoubleValue();
+		p->setGain(1, g, true);
 	}
 	else
 	{

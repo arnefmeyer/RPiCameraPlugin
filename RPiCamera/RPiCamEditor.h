@@ -74,7 +74,8 @@ public:
 	void comboBoxChanged(ComboBox* cb);
 
 	void updateValues();
-	void updateGains();
+	void updateGains(bool query = true);
+	void setGainsFromUserInput();
 
 	void enableControls(bool state);
 

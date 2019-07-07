@@ -69,24 +69,32 @@ public:
 	void startRecording();
 	void stopRecording();
 
-    void setPort(int port, bool connect = false);
-	int getPort();
 	void setAddress(String s, bool connect = false);
 	String getAddress();
+
+    void setPort(int port, bool connect = false);
+	int getPort();
+
 	void setResolution(int w, int h);
+
 	void setFramerate(int fps);
 	int getFramerate() { return framerate; }
+
 	void setVflip(bool status);
 	bool getVflip() { return vflip; }
 	void setHflip(bool status);
 	bool getHflip() { return hflip; }
+
 	void setZoom(int z[4]);
 	void getZoom(int *z);
+
 	void resetGains();
-	void getGains();
-	void getGains(double *gains, bool update = false);
-	void setGains();
-	void setGains(double *gains, bool update = false);
+	void queryGains();
+	void sendGains();
+	void getGains(double *gains, bool query = false);
+	void setGains(double *gains, bool send = false);
+	void setGain(int index, double value, bool send = false);
+	double getGain(int index, bool query = false);
 
 	void sendCameraParameters();
 

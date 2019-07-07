@@ -191,7 +191,12 @@ void RPiCam::sendCameraParameters()
 	{
 		setResolution(width, height);
 		setFramerate(framerate);
-		setGains();
+
+		// try to send stored gains (if valid)
+		sendGains();
+
+		// always try to query actual gains
+		queryGains();
 	}
 }
 
@@ -206,11 +211,47 @@ void RPiCam::resetGains()
 }
 
 
-void RPiCam::getGains(double *gains_, bool update)
+void RPiCam::queryGains()
 {
-	if (update)
+	if (socket != NULL)
 	{
-		getGains();
+		String msg("GetGains");
+		String response = sendMessage(msg, 1000);
+
+		if (response != String("not connected"))
+		{
+			StringArray tokens;
+			tokens.addTokens(response, true);
+			for (int i=0; i<2; i++)
+			{
+				gains[i] = tokens[i].getDoubleValue();
+			}
+		}
+	}
+}
+
+
+void RPiCam::sendGains()
+{
+	if (socket != NULL)
+	{
+		if ((gains[0] >= 0) && (gains[0] <= 8) && (gains[1] >= 0) && (gains[1] <= 8))
+		{
+			String msg("SetGains");
+			msg += String(" ") + String(gains[0]);
+			msg += String(" ") + String(gains[1]);
+			std::cout << "RPiCam::sendGains message: " << msg << "\n";
+			sendMessage(msg, 1000);
+		}
+	}
+}
+
+
+void RPiCam::getGains(double *gains_, bool query)
+{
+	if (query)
+	{
+		queryGains();
 	}
 
 	for (int i=0; i<2; i++)
@@ -220,43 +261,47 @@ void RPiCam::getGains(double *gains_, bool update)
 }
 
 
-void RPiCam::getGains()
-{
-	String msg("GetGains");
-	String response = sendMessage(msg, 1000);
-
-	StringArray tokens;
-	tokens.addTokens(response, true);
-	for (int i=0; i<2; i++)
-	{
-		gains[i] = tokens[i].getDoubleValue();
-	}
-}
-
-
-void RPiCam::setGains()
-{
-	if ((gains[0] > 0) && (gains[0] <= 8)&& (gains[1] > 0) && (gains[1] <= 8))
-	{
-		String msg("SetGains");
-		msg += String(" ") + String(gains[0]);
-		msg += String(" ") + String(gains[1]);
-		sendMessage(msg, 1000);
-	}
-}
-
-
-void RPiCam::setGains(double *gains_, bool update)
+void RPiCam::setGains(double *gains_, bool send)
 {
 	for (int i=0; i<2; i++)
 	{
 		gains[i] = gains_[i];
 	}
 
-	if (update)
+	if (send)
 	{
-		setGains();
+		sendGains();
 	}
+}
+
+
+void RPiCam::setGain(int index, double value, bool send)
+{
+	if ((index >= 0) && (index <= 1) && (value >= 0) && (value <= 8))
+	{
+		gains[index] = value;
+		if (send)
+		{
+			sendGains();
+		}
+	}
+}
+
+
+double RPiCam::getGain(int index, bool query)
+{
+	double g = -1;
+	if ((index >= 0) && (index <= 1))
+	{
+		if (query)
+		{
+			queryGains();
+		}
+
+		g = gains[index];
+	}
+
+	return g;
 }
 
 
@@ -373,7 +418,9 @@ void RPiCam::updateSettings()
 {
 	if (editor != NULL)
 	{
-		editor->update();
+		RPiCamEditor* e = (RPiCamEditor*) getEditor();
+		e->update();
+		e->updateGains(true);
 	}
 }
 
