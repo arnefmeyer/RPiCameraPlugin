@@ -124,8 +124,8 @@ class ZmqThread(threading.Thread):
 
             elif cmd == 'ResetGains':
 
+                socket.send("Done (but wait at least 2 seconds)")
                 self.parameter_callback('ResetGains', None)
-                socket.send("Done")
 
             elif cmd == 'GetGains':
 
