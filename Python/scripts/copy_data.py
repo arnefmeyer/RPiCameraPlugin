@@ -21,6 +21,9 @@ import os.path as op
 import argparse
 import traceback
 import sys
+import glob
+import shutil
+
 
 try:
     import rpicamera.util as rpu
@@ -29,16 +32,41 @@ except ImportError:
     import rpicamera.util as rpu
 
 
+def copy_local(localpath, path, dest_dir, verbose=True):
+    # recursively search for matching directory and copy data
+
+    rec_name = path.split(op.sep)[-1]
+    for root, dirs, files in os.walk(localpath):
+
+        if rec_name in dirs:
+
+            local_dir = op.join(root, rec_name)
+            for ext in ['h264', 'csv', 'json']:
+
+                for f in glob.glob(op.join(local_dir, '*.' + ext)):
+
+                    if verbose:
+                        print("copying file")
+                        print("  source=" + f)
+                        print("  dest=" + dest_dir)
+
+                    shutil.copy(f, dest_dir)
+
+
 def copy_data(path=None,
               user=None,
               address=None,
               verbose=False,
+              localpath=None,
               **kargs):
 
     assert path is not None
     assert user is not None
 
-    path = op.abspath(op.expanduser(path))
+    path = op.realpath(op.expanduser(path))
+
+    if localpath is not None:
+        localpath = op.realpath(op.expanduser(localpath))
 
     if not op.exists(path):
         os.makedirs(path)
@@ -50,16 +78,19 @@ def copy_data(path=None,
 
         for dd in remote_data:
 
-            if address is not None:
-                remote_address = address
-            else:
-                remote_address = dd['address']
-
             try:
-                rpu.scp(user, remote_address,
-                        op.join(dd['path'], '*.{h264,csv,json}'),
-                        f['recording_path'],
-                        verbose=verbose)
+                if localpath is not None:
+                    # copy data from local path (see function "copy_local")
+                    copy_local(localpath, dd['path'],
+                               f['recording_path'])
+                else:
+                    # copy data from remote location (i.e. Raspberry Pi)
+                    rpu.scp(user,
+                            dd['address'] if address is None else address,
+                            op.join(dd['path'], '*.{h264,csv,json}'),
+                            f['recording_path'],
+                            verbose=verbose)
+
             except BaseException:
                 traceback.print_exc()
 
@@ -84,7 +115,7 @@ def copy_data_parallel(path=None,
     assert path is not None
     assert user is not None
 
-    path = op.abspath(op.expanduser(path))
+    path = op.realpath(op.expanduser(path))
 
     if not op.exists(path):
         os.makedirs(path)
@@ -124,11 +155,14 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--parallel', action='store_true')
     parser.add_argument('-w', '--workers', default=4)
     parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-l', '--localpath', default=None)
 
     args = vars(parser.parse_args())
 
     parallel = args.pop('parallel')
     if parallel:
+        if args['localpath'] is not None:
+            raise Exception('The parallel option can only be used for remote locations')
         copy_data_parallel(**args)
     else:
         copy_data(**args)
