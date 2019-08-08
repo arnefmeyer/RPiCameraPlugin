@@ -159,10 +159,14 @@ if __name__ == '__main__':
 
     args = vars(parser.parse_args())
 
+    print(args)
+
     parallel = args.pop('parallel')
+    local_path = args.pop('localpath')
     if parallel:
-        if args['localpath'] is not None:
+        if local_path is not None:
             raise Exception('The parallel option can only be used for remote locations')
         copy_data_parallel(**args)
     else:
-        copy_data(**args)
+        copy_data(localpath=local_path,
+                  **args)
