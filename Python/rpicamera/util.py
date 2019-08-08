@@ -59,41 +59,51 @@ def get_video_files(path, absolute=False, recursive=False):
     return rec_files
 
 
+def read_timestamps(ts_file):
+
+    ts = None
+
+    try:
+        ts = np.genfromtxt(ts_file, delimiter=',')
+
+    except ValueError:
+        # this can happen if the file has been closed before the value of the 2nd column was written
+        ts = []
+        with open(ts_file, 'r') as f:
+            for line in f:
+                if not line.startswith('#'):
+                    if ',' in line:
+                        values = [int(x) for x in line.split(',')]
+                        if len(values) >= 2:
+                            ts.append(values)
+        ts = np.asarray(ts)
+
+    except BaseException:
+        # some other error
+        traceback.print_exc()
+
+    if ts is not None and ts.shape[1] > 2:
+        # only use first two columns
+        ts = ts[:, :2]
+
+    return ts
+
+
 def read_timestamp_deltas(path):
 
     if op.isfile(path):
+        # path is a timestamp file
         files = [path]
     elif op.isdir(path):
-        files = glob.glob(op.join(path, '*timestamps.txt'))
+        # search for timestamp files and use first file
+        # TODO: print warning if there are multiple files in path
+        files = sorted(glob.glob(op.join(path, '*timestamps.txt')))
     else:
         raise ValueError('given path neither file nor directory')
 
     if len(files) > 0:
-        ts_file = files[0]
 
-        try:
-            ts = np.genfromtxt(ts_file, delimiter=',')
-
-        except ValueError:
-            # this can happen if the file has been closed before the value of the 2nd column was written
-            ts = []
-            with open(ts_file, 'r') as f:
-                for line in f:
-                    if not line.startswith('#'):
-                        if ',' in line:
-                            values = [int(x) for x in line.split(',')]
-                            if len(values) >= 2:
-                                ts.append(values)
-            ts = np.asarray(ts)
-
-        except BaseException:
-            # some other error
-            traceback.print_exc()
-
-        if ts.shape[1] > 2:
-            # only use first two columns
-            ts = ts[:, :2]
-
+        ts = read_timestamps(files[0])
         dts = np.diff(ts, axis=1).ravel() / 1000000.  # usec -> sec
 
         # in very rare cases, the encoder doesn't attach a valid timestamp
@@ -108,8 +118,15 @@ def read_timestamp_deltas(path):
     return dts
 
 
-def interpolate_missing_timestamps(ts, deltas, fps=30):
-    """simple interpolation of missing timestamps (not multiple in a row)"""
+def interpolate_missing_timestamps(ts, deltas,
+                                   fps=30):
+    """simple interpolation of missing timestamps (not multiple in a row)
+
+    Missing timestamp means that the frame was received from the camera and
+    written to the video file but there was not valid presentation timestamp
+    attached to it.
+
+    """
 
     missing = np.where(deltas < 0)[0]
 
