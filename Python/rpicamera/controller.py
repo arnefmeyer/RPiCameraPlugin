@@ -236,15 +236,18 @@ class Controller(object):
 
         self.closed = True
 
-    def start_preview(self, warmup=2., fix_awb_gains=True,
-                      fix_exposure_speed=True):
+    def start_preview(self,
+                      warmup=2.,
+                      fix_awb_gains=True,
+                      fix_exposure_speed=True,
+                      **kwargs):
 
         if self.camera is not None:
 
             self.camera.awb_mode = 'auto'
             self.camera.exposure_mode = 'auto'
 
-            self.camera.start_preview()
+            self.camera.start_preview(**kwargs)
 
             # wait for camera to "warm up"
             time.sleep(warmup)
@@ -259,7 +262,9 @@ class Controller(object):
                 self.camera.shutter_speed = self.camera.exposure_speed
                 self.camera.exposure_mode = 'off'
 
-    def reset_gains(self, warmup=2., fix_awb_gains=True,
+    def reset_gains(self,
+                    warmup=2.,
+                    fix_awb_gains=True,
                     fix_exposure_speed=True):
 
         if self.camera is not None:
