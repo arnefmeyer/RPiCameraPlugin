@@ -231,6 +231,11 @@ def get_event_files(path, verbose=True):
                                                 'format': 'binary',
                                                 'recording_path': root})
 
+            elif f.endswith('.nwb'):
+                event_files.append({'filepath': op.join(root, f),
+                                    'format': 'nwb',
+                                    'recording_path': root})
+
     if verbose:
         print("found {} event files:".format(len(event_files)))
         for ef in event_files:
@@ -249,7 +254,7 @@ def load_messages_from_event_file(event_file):
 
     if event_file['format'] == 'kwik':
         # kwik event file
-        with h5py.File(event_file['path'], 'r') as f:
+        with h5py.File(event_file['filepath'], 'r') as f:
             messages = \
                 f['event_types']['Messages']['events']['user_data']['Text']
 
@@ -257,6 +262,17 @@ def load_messages_from_event_file(event_file):
         # binary format network event file
         messages = [msg.strip()
                     for msg in np.load(event_file['filepath']).tolist()]
+    elif event_file['format'] == 'nwb':
+        # nwb event file
+        with h5py.File(event_file['filepath'], 'r') as f:
+            eventEntries = f['acquisition']['timeseries']['recording1']['events']
+            textEntires = [i for i in eventEntries.keys() if i.startswith('text') ]
+            messages = []
+            for textX in textEntires:
+                uniqueMessage = f['acquisition']['timeseries']['recording1']['events'][textX]['data']
+                # in some case textX entries can be empty, so only check for valid textX fields
+                if len(uniqueMessage) > 0:
+                    messages.append(uniqueMessage[0].decode("utf-8"))
 
     return messages
 
