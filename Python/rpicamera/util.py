@@ -288,7 +288,7 @@ def load_messages_from_event_file(event_file):
             # only keep lines with the messages concerning RPiCam
             messages = [mess for mess in L if 'RPiCam' in mess]
             # remove a number before occurrence of 'RPiCam'
-            messages = ['RPiCam' + mess.split('RPiCam')[1] for mess in messages ]
+            messages = ['RPiCam Address' + mess.split('RPiCam Address')[1] for mess in messages ]
             print(messages)
              
     return messages
