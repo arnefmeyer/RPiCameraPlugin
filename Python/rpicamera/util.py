@@ -197,9 +197,10 @@ def load_video_parameters(path, pattern='*video*'):
 def get_event_files(path, verbose=True):
     """recursive search for event files
 
-        currently supported: kwik (kwe) and binary format (text.npy)
-
-        TODO: add support for open-ephys and nwb formats
+        currently supported: - kwik (kwe) 
+                             - binary format (text.npy)
+                             - nwb format (.nwb)
+                             - open-ephys (.openephys)
     """
 
     event_files = []
@@ -231,6 +232,16 @@ def get_event_files(path, verbose=True):
                                                 'format': 'binary',
                                                 'recording_path': root})
 
+            elif f.endswith('.nwb'):
+                event_files.append({'filepath': op.join(root, f),
+                                    'format': 'nwb',
+                                    'recording_path': root})
+            
+            elif f.endswith('.openephys'):
+                event_files.append({'filepath': op.join(root, f),
+                                    'format': 'openephys',
+                                    'recording_path': root})
+
     if verbose:
         print("found {} event files:".format(len(event_files)))
         for ef in event_files:
@@ -249,7 +260,7 @@ def load_messages_from_event_file(event_file):
 
     if event_file['format'] == 'kwik':
         # kwik event file
-        with h5py.File(event_file['path'], 'r') as f:
+        with h5py.File(event_file['filepath'], 'r') as f:
             messages = \
                 f['event_types']['Messages']['events']['user_data']['Text']
 
@@ -257,7 +268,29 @@ def load_messages_from_event_file(event_file):
         # binary format network event file
         messages = [msg.strip()
                     for msg in np.load(event_file['filepath']).tolist()]
-
+    elif event_file['format'] == 'nwb':
+        # nwb event file
+        with h5py.File(event_file['filepath'], 'r') as f:
+            eventEntries = f['acquisition']['timeseries']['recording1']['events']
+            textEntires = [i for i in eventEntries.keys() if i.startswith('text') ]
+            messages = []
+            for textX in textEntires:
+                uniqueMessage = f['acquisition']['timeseries']['recording1']['events'][textX]['data']
+                # I am not sure why but in some case textX entries can be empty, 
+                # so only check for valid textX fields
+                if len(uniqueMessage) > 0:
+                    messages.append(uniqueMessage[0].decode("utf-8"))
+    elif event_file['format'] == 'openephys':
+        # for .openephys fil, messages are stored in an .messages file
+        messagefile = op.join(event_file['recording_path'],'messages.events')
+        with open(messagefile,'r') as f:
+            L = f.readlines()
+            # only keep lines with the messages concerning RPiCam
+            messages = [mess for mess in L if 'RPiCam' in mess]
+            # remove a number before occurrence of 'RPiCam'
+            messages = ['RPiCam Address' + mess.split('RPiCam Address')[1] for mess in messages ]
+            print(messages)
+             
     return messages
 
 
