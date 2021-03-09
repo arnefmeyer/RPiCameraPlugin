@@ -29,8 +29,14 @@ It also requires the "rpicamera" Python package (see "Python" folder) to control
 
 1.  Install the "rpicamera" Python package (see "Python" folder) on the RPi.
 
-2.  Copy the RPiCamera folder to the plugin folder of your open-ephys plugin-GUI. Then build
-    the all plugins as described in the [wiki](https://open-ephys.atlassian.net/wiki/display/OEW/Linux).
+2.  To compile the plugin, follow the instructions in the [open-ephys wiki](https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/1259110401/Plugin+CMake+Builds).
+
+Depending on the platform, the last step might require some modifications. In particular, the base directory of the plugin-GUI needs to be defined (GUI_BASE_DIR):  
+`cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DGUI_BASE_DIR=FOLDERCONTAININGTHEPLUGINGUI/plugin-GUI ..`  
+
+The JUCE version that is currently shipped with the plugin-GUI requires gcc/g++ < 9 (e.g., 8) but more recent Linux distributions (e.g., Ubuntu or Linux Mint) use 9 by default. If some JUCE error occurs during compilation manually set the gcc/g++ version:  
+`cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DGUI_BASE_DIR=FOLDERCONTAININGTHEPLUGINGUI/plugin-GUI -D CMAKE_C_COMPILER=gcc-8 -D CMAKE_CXX_COMPILER=g++-8 ..`
+
 
 ## Setting up the Raspberry Pi
 
