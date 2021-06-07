@@ -8,13 +8,14 @@
     test client for the rpicamera plugin
 """
 
+from __future__ import print_function
 
 import sys
 import zmq
 import time
 
 
-def run_example(rec_path, duration=10, address='128.40.50.22', port=5555):
+def run_example(rec_path, duration=10, address='127.0.0.1', port=5555):
 
     url = "tcp://%s:%d" % (address, port)
 
@@ -32,12 +33,12 @@ def run_example(rec_path, duration=10, address='128.40.50.22', port=5555):
 
                 msg = "Resolution {} {}".format(width, height)
                 socket.send(msg)
-                print socket.recv()
+                print(socket.recv())
                 time.sleep(1)
 
                 msg = "Framerate {}".format(framerate)
                 socket.send(msg)
-                print socket.recv()
+                print(socket.recv())
                 time.sleep(1)
 
                 msg = "Start"
@@ -45,24 +46,24 @@ def run_example(rec_path, duration=10, address='128.40.50.22', port=5555):
                 msg += " Recording={}".format(1)
                 msg += " Path={}".format(rec_path)
                 socket.send(msg)
-                print socket.recv()
+                print(socket.recv())
 
-                print "recording for {} seconds".format(duration)
+                print("recording for {} seconds".format(duration))
                 time.sleep(duration)
 
                 socket.send("Stop")
-                print socket.recv()
+                print(socket.recv())
 
                 socket.send("Close")
-                print socket.recv()
+                print(socket.recv())
 
             except KeyboardInterrupt:
-                print "exiting client"
+                print("exiting client")
 
 
 if __name__ == '__main__':
 
-    address = '128.40.50.22'
+    address = '127.0.0.1'  # replace by RPi IP address
     rec_path = 'SomeRecordingName'
 
     # rec_path = sys.argv[1]
