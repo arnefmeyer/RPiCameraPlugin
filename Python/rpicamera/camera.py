@@ -139,7 +139,7 @@ class CameraGPIO(picamera.PiCamera):
                                          resolution=resolution,
                                          clock_mode=clock_mode)
 
-        for k, value in kwargs.iteritems():
+        for (k, value) in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, value)
 

@@ -284,7 +284,7 @@ class Controller(object):
 
             self.camera.exposure_mode = 'auto'
 
-            self.camera.start_preview()
+            self.camera.start_preview(**kwargs)
 
             # wait for camera to "warm up"
             time.sleep(warmup_time)
