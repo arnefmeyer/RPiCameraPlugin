@@ -46,6 +46,9 @@
 */
 
 
+String generateDateString();
+
+
 class RPiCam : public GenericProcessor
 {
 public:
@@ -69,11 +72,13 @@ public:
 	void startRecording();
 	void stopRecording();
 
-    void setPort(int port, bool connect = false);
+    void setPort(int port, bool connect = false, bool update = true);
 	int getPort();
-	void setAddress(String s, bool connect = false);
+	void setAddress(String s, bool connect = false, bool update = true);
 	String getAddress();
 	void setResolution(int w, int h);
+    int getWidth() { return width; }
+    int getHeight() { return height; }
 	void setFramerate(int fps);
 	int getFramerate() { return framerate; }
 	void setVflip(bool status);
@@ -105,7 +110,7 @@ private:
     int port;
 	String address;
 
-    bool sendRecPath;
+    bool sendRecPathEvent;
     String rpiRecPath;
 
 	int width;
@@ -126,4 +131,3 @@ private:
 };
 
 #endif  // RPICAM
-

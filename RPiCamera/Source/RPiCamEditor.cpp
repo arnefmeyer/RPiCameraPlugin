@@ -191,6 +191,27 @@ void RPiCamEditor::updateValues()
 	{
 		addressEdit->setText(p->getAddress(), dontSendNotification);
 	}
+
+  // set camera format based on resolution
+  int index = 0;
+  for (RPiCamFormat *fmt=camFormats.begin(); fmt++; fmt!=camFormats.end())
+  {
+    if (fmt->width == p->getWidth() && fmt->height == p->getHeight())
+    {
+      resolutionCombo->setSelectedItemIndex(index+1, dontSendNotification);
+
+      fpsCombo->clear();
+      RPiCamFormat fmt = camFormats[index];
+      for (int i=0; i<fmt.framerate_max-fmt.framerate_min+1; i++)
+      {
+        fpsCombo->addItem(String(fmt.framerate_min + i), i+1);
+      }
+      fpsCombo->setSelectedItemIndex(p->getFramerate()-fmt.framerate_min-1, dontSendNotification);
+
+      break;
+    }
+    index++;
+  }
 }
 
 
@@ -205,7 +226,7 @@ void RPiCamEditor::buttonEvent(Button* button)
 	RPiCam *p= (RPiCam *)getProcessor();
 
 	if (button == connectButton)
-	{		
+	{
 		p->closeSocket();
 		p->openSocket();
 		p->sendCameraParameters();
@@ -339,4 +360,3 @@ void RPiCamEditor::comboBoxChanged(ComboBox* cb)
 		p->setFramerate(fps);
 	}
 }
-

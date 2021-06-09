@@ -300,6 +300,7 @@ def parse_messages(messages):
 
     for msg in messages:
 
+        msg = msg.decode('utf-8')
         parts = msg.split()
 
         if parts[0] == 'RPiCam':

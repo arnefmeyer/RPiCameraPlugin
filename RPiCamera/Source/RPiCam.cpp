@@ -36,18 +36,76 @@ const int MAX_MESSAGE_LENGTH = 16000;
 #include <unistd.h>
 #endif
 
+
+String generateDateString()
+{
+    // adapted from RecordNode.cpp
+
+	Time t = Time::getCurrentTime();
+
+	String s;
+
+    s += String(t.getYear());
+    s += '-';
+
+    int m = t.getMonth() + 1;
+    if (m < 10)
+    {
+        s += "0";
+       }
+    s += String(m);
+	s += "-";
+
+    int day = t.getDayOfMonth();
+    if (day < 10)
+    {
+        s += "0";
+    }
+	s += String(day);
+
+	s += "_";
+
+	int hrs, mins, secs;
+	hrs = t.getHours();
+	mins = t.getMinutes();
+	secs = t.getSeconds();
+
+    if (hrs < 10)
+    {
+        s += "0";
+    }
+	s += hrs;
+    s += "-";
+
+	if (mins < 10)
+	{
+		s += "0";
+	}
+	s += mins;
+    s += "-";
+
+	if (secs < 10)
+	{
+		s += "0";
+	}
+	s += secs;
+
+	return s;
+}
+
+
 RPiCam::RPiCam()
-    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPath(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false), zoom{0, 0, 100, 100}
+    : GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPathEvent(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false), zoom{0, 0, 100, 100}
 
 {
-    setProcessorType (PROCESSOR_TYPE_SOURCE);
+    setProcessorType(PROCESSOR_TYPE_SOURCE);
 
     createContext();
 
 	if (!address.isEmpty())
-	{
-	    openSocket();
-	}
+  	{
+  	    openSocket();
+  	}
 
     sendSampleCount = false;
 }
@@ -73,7 +131,7 @@ void RPiCam::createEventChannels()
 }
 
 
-void RPiCam::setPort(int p, bool connect)
+void RPiCam::setPort(int p, bool connect, bool update)
 {
 	if (p != port)
 	{
@@ -85,13 +143,16 @@ void RPiCam::setPort(int p, bool connect)
 			openSocket();
 		}
 
-		RPiCamEditor* e = (RPiCamEditor*)getEditor();
-		e->updateValues();
+        if (update)
+        {
+          RPiCamEditor* e = (RPiCamEditor*)getEditor();
+          e->updateValues();
+        }
 	}
 }
 
 
-void RPiCam::setAddress(String s, bool connect)
+void RPiCam::setAddress(String s, bool connect, bool update)
 {
 	if (!s.equalsIgnoreCase(address))
 	{
@@ -103,8 +164,11 @@ void RPiCam::setAddress(String s, bool connect)
 			openSocket();
 		}
 
-		RPiCamEditor* e = (RPiCamEditor*)getEditor();
-		e->updateValues();
+        if (update)
+        {
+                RPiCamEditor* e = (RPiCamEditor*)getEditor();
+                e->updateValues();
+        }
 	}
 }
 
@@ -345,16 +409,22 @@ void RPiCam::startRecording()
 	isRecording = true;
 
 	int expNumber = CoreServices::RecordNode::getExperimentNumber();
-	int recNumber = CoreServices::RecordNode::getRecordingNumber();
+	int recNumber = CoreServices::RecordNode::getRecordingNumber() + 1;
 	String recPath = CoreServices::RecordNode::getRecordingPath().getFullPathName();
 
 	String msg("Start");
 	msg += String(" Experiment=") + String(expNumber);
 	msg += String(" Recording=") + String(recNumber);
-	msg += String(" Path=") + recPath;
+
+    // make sure to include a unique recording directory name to avoid overwriting data on the RPi
+    if (recPath.length() == 0)
+    {
+        recPath = generateDateString();
+    }
+    msg += String(" Path=") + recPath;
 
 	rpiRecPath = sendMessage(msg);
-    sendRecPath = true;
+    sendRecPathEvent = true;
 
 	RPiCamEditor* e = (RPiCamEditor*)getEditor();
 	e->enableControls(false);
@@ -375,13 +445,13 @@ void RPiCam::stopRecording()
 void RPiCam::process(AudioSampleBuffer& buffer)
 {
 
-    if (rpiRecPath.isNotEmpty() && sendRecPath)
+    if (rpiRecPath.isNotEmpty() && sendRecPathEvent)
     {
         juce::int64 timestamp_software = timer.getHighResolutionTicks();
         String msg1("RPiCam Address=" + address + " RecPath=" + rpiRecPath);
 
-		uint8* msg1_raw = new uint8[msg1.length()+1];
-		memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
+        uint8* msg1_raw = new uint8[msg1.length()+1];
+        memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
 		*(msg1_raw+msg1.length()) = '\0';
 
 	    MetaDataValueArray md;
@@ -396,9 +466,9 @@ void RPiCam::process(AudioSampleBuffer& buffer)
 //                 0,
 //                 msg1.length()+1,
 //                 (uint8*)msg1_raw);
-		delete[] msg1_raw;
+        delete[] msg1_raw;
 
-        sendRecPath = false;
+        sendRecPathEvent = false;
     }
 }
 
@@ -414,6 +484,9 @@ void RPiCam::saveCustomParametersToXml(XmlElement* parentElement)
     XmlElement* mainNode = parentElement->createNewChildElement("RPiCam");
 	mainNode->setAttribute("address", address);
     mainNode->setAttribute("port", port);
+    mainNode->setAttribute("width", width);
+    mainNode->setAttribute("height", height);
+    mainNode->setAttribute("framerate", framerate);
 	mainNode->setAttribute("hflip", hflip);
 	mainNode->setAttribute("vflip", vflip);
 	mainNode->setAttribute("x1", zoom[0]);
@@ -425,36 +498,52 @@ void RPiCam::saveCustomParametersToXml(XmlElement* parentElement)
 
 void RPiCam::loadCustomParametersFromXml()
 {
-
     if (parametersAsXml != nullptr)
     {
         forEachXmlChildElement(*parametersAsXml, mainNode)
         {
             if (mainNode->hasTagName("RPiCam"))
             {
-				std::cout << "RPiCam setting attribute address: " << mainNode->getStringAttribute("address") << "\n";
-                setAddress(mainNode->getStringAttribute("address"), false);
-				setPort(mainNode->getIntAttribute("port"), false);
+                // std::cout << "RPiCam setting attribute address: " << mainNode->getStringAttribute("address") << "\n";
+                setAddress(mainNode->getStringAttribute("address"), false, false);
+				setPort(mainNode->getIntAttribute("port"), false, false);
 
-				if (mainNode->hasAttribute("hflip"))
-				{
-					hflip = mainNode->getBoolAttribute("hflip");
-				}
+                if (mainNode->hasAttribute("width"))
+                {
+                    width = mainNode->getIntAttribute("width");
+                }
 
-				if (mainNode->hasAttribute("vflip"))
-				{
-					vflip = mainNode->getBoolAttribute("vflip");
-				}
+                if (mainNode->hasAttribute("height"))
+      			{
+      			    height = mainNode->getIntAttribute("height");
+      			}
 
-				if (mainNode->hasAttribute("x1"))
-				{
-					zoom[0] = mainNode->getIntAttribute("x1");
-					zoom[1] = mainNode->getIntAttribute("y1");
-					zoom[2] = mainNode->getIntAttribute("x2");
-					zoom[3] = mainNode->getIntAttribute("y2");
-				}
+                if (mainNode->hasAttribute("framerate"))
+                {
+                    framerate = mainNode->getIntAttribute("framerate");
+                }
+
+                if (mainNode->hasAttribute("hflip"))
+                {
+                    hflip = mainNode->getBoolAttribute("hflip");
+                }
+
+      			if (mainNode->hasAttribute("vflip"))
+      			{
+      			    vflip = mainNode->getBoolAttribute("vflip");
+      			}
+
+      			if (mainNode->hasAttribute("x1"))
+      			{
+      			    zoom[0] = mainNode->getIntAttribute("x1");
+      			    zoom[1] = mainNode->getIntAttribute("y1");
+      			    zoom[2] = mainNode->getIntAttribute("x2");
+      			    zoom[3] = mainNode->getIntAttribute("y2");
+      			}
+
+                RPiCamEditor* e = (RPiCamEditor*)getEditor();
+                e->updateValues();
             }
         }
     }
 }
-
