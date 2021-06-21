@@ -37,6 +37,13 @@ Depending on the platform, the last step might require some modifications. In pa
 The JUCE version that is currently shipped with the plugin-GUI requires gcc/g++ < 9 (e.g., 8) but more recent Linux distributions (e.g., Ubuntu or Linux Mint) use 9 by default. If some JUCE error occurs during compilation manually set the gcc/g++ version:  
 `cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DGUI_BASE_DIR=FOLDERCONTAININGTHEPLUGINGUI/plugin-GUI -D CMAKE_C_COMPILER=gcc-8 -D CMAKE_CXX_COMPILER=g++-8 ..`
 
+The following notes may be helpful for Windows 10 installations:
+0) Download CMake and Visual Studio if you don't have them already.
+1) It will likely be necessary to point to the GUI_BASE_DIR as above. The path may need to be in double quotations. You'll know it failed if it can't find some headers when you try to compile the VS solution.
+2) If the cmake command gives an error about ZeroMQ libraries, point to the ZeroMQ library directly from the `CMakeLists.txt` file by using the PATH option:
+`find_library(ZMQ_LIBRARIES NAMES libzmq-v120-mt-4_0_4 zmq zmq-v120-mt-4_0_4 PATHS "[path to your open ephys]/Resources/windows-libs/ZeroMQ/lib_x64")`
+`find_path(ZMQ_INCLUDE_DIRS zmq.h PATHS "[path to your open ephys]/Resources/windows-libs/ZeroMQ/include")`
+3) In order for Visual Studio to recognize the solution as x64, it was necessary to include "-A x64" as an argument to cmake.
 
 ## Setting up the Raspberry Pi
 
