@@ -38,6 +38,7 @@ The JUCE version that is currently shipped with the plugin-GUI requires gcc/g++ 
 `cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DGUI_BASE_DIR=FOLDERCONTAININGTHEPLUGINGUI/plugin-GUI -D CMAKE_C_COMPILER=gcc-8 -D CMAKE_CXX_COMPILER=g++-8 ..`
 
 The following notes may be helpful for Windows 10 installations:
+
 0) Download CMake and Visual Studio if you don't have them already.
 1) It will likely be necessary to point to the GUI_BASE_DIR as above. The path may need to be in double quotations. You'll know it failed if it can't find some headers when you try to compile the VS solution.
 2) If the cmake command gives an error about ZeroMQ libraries, point to the ZeroMQ library directly from the `CMakeLists.txt` file by using the PATH option:
