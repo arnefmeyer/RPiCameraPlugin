@@ -44,7 +44,7 @@ The following notes may be helpful for Windows 10 installations:
 2) If the cmake command gives an error about ZeroMQ libraries, point to the ZeroMQ library directly from the `CMakeLists.txt` file by using the PATH option:
 `find_library(ZMQ_LIBRARIES NAMES libzmq-v120-mt-4_0_4 zmq zmq-v120-mt-4_0_4 PATHS "[path to your open ephys]/Resources/windows-libs/ZeroMQ/lib_x64")`
 `find_path(ZMQ_INCLUDE_DIRS zmq.h PATHS "[path to your open ephys]/Resources/windows-libs/ZeroMQ/include")`
-3) In order for Visual Studio to recognize the solution as x64, it was necessary to include "-A x64" as an argument to cmake.
+3) In order for Visual Studio to recognize the solution as x64, it was necessary to include `-A x64` as an argument to cmake.
 
 ## Setting up the Raspberry Pi
 
