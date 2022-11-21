@@ -44,6 +44,46 @@
   @see GenericProcessor
 
 */
+class RPiCamFormat
+{
+public:
+    RPiCamFormat() : width(0), height(0), framerate(0), framerate_min(0), framerate_max(0)
+    {
+    }
+
+    RPiCamFormat(int w, int h, int r, int r_min, int r_max)
+    {
+        width = w;
+        height = h;
+        framerate = r;
+        framerate_min = r_min;
+        framerate_max = r_max;
+    }
+
+    int width;
+    int height;
+    int framerate;
+    int framerate_min;
+    int framerate_max;
+};
+
+// camera formats; for available video modes see https://picamera.readthedocs.io/en/release-1.13/fov.html
+auto const camFormats = Array<RPiCamFormat>(
+    {RPiCamFormat(2592, 1944, 10, 1, 15),
+     RPiCamFormat(1920, 1080, 10, 1, 15),
+     RPiCamFormat(1296, 972, 30, 1, 42),
+     RPiCamFormat(1296, 730, 30, 1, 49),
+     RPiCamFormat(1280, 720, 30, 1, 49),
+     RPiCamFormat(1024, 768, 30, 1, 60),
+     RPiCamFormat(800, 600, 30, 1, 60),
+     RPiCamFormat(640, 480, 30, 1, 90)});
+
+auto const timestamp_meta_desc = std::make_unique<MetadataDescriptor>(
+    MetadataDescriptor::MetadataType::INT64,
+    1,
+    "Software timestamp",
+    "OS high resolution timer count when the event was received",
+    "timestamp.software");
 
 String generateDateString();
 
@@ -56,8 +96,6 @@ public:
     void process(AudioSampleBuffer &buffer) override;
 
     void parameterValueChanged(Parameter *);
-    void setParameter(int parameterIndex, float newValue);
-    void createEventChannels();
 
     bool isSource() { return true; };
 
@@ -69,8 +107,8 @@ public:
     void enabledState(bool t);
     int getNumEventChannels() { return 1; };
 
-    void startRecording();
-    void stopRecording();
+    void startRecording() override;
+    void stopRecording() override;
 
     void setPort(int port, bool connect = false, bool update = true);
     int getPort();
@@ -96,14 +134,14 @@ public:
 
     String sendMessage(String msg, int timeout = -1);
 
-    void saveCustomParametersToXml(XmlElement *parentElement);
-    void loadCustomParametersFromXml();
-
 private:
     void handleEvent(int eventType, MidiMessage &event, int samplePos);
 
     void createContext();
     void destroyContext();
+
+    StringArray m_resolutions{};
+    StringArray m_fps{};
 
     void *context;
     void *socket;
