@@ -1,0 +1,7 @@
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/RPiCameraPlugin.dir
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/edit_cache.dir
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/rebuild_cache.dir
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/list_install_components.dir
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/install.dir
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/install/local.dir
+/home/robin/gits/OEPlugins/RPiCameraPlugin/Build/CMakeFiles/install/strip.dir
