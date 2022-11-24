@@ -28,18 +28,20 @@
 
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
 
-CustomUpDownButton::CustomUpDownButton(Parameter *param) : ParameterEditor(param)
+CustomUpDownButton::CustomUpDownButton(Parameter *param, int initValue = 0) : ParameterEditor(param), m_value(initValue)
 {
 	m_up = std::make_unique<TriangleButton>(1);
 	m_up->setBounds(10, 0, 10, 10);
 	m_up->addListener(this);
 	addAndMakeVisible(m_up.get());
 
-	m_label = std::make_unique<Label>(param->getName(), param->getName());
+	auto str = param->getName();
+	str = str.substring(0, 1) + String(":") + String(m_value);
+	m_label = std::make_unique<Label>(param->getName(), str);
 	m_label->setBounds(0, 13, 40, 10);
-	Font f{10, Font::bold};
+	Font f{12, Font::bold};
 	m_label->setFont(f);
-	m_label->setJustificationType(Justification::centred);
+	m_label->setJustificationType(Justification::left);
 	addAndMakeVisible(m_label.get());
 
 	m_down = std::make_unique<TriangleButton>(2);
@@ -61,9 +63,26 @@ void CustomUpDownButton::buttonClicked(Button *btn)
 		--m_value;
 	}
 	param->setNextValue(m_value);
+	updateLabel();
+}
+
+void CustomUpDownButton::updateLabel()
+{
+	auto str = param->getName();
+	str = str.substring(0, 1) + String(":") + String(m_value);
+	m_label->setText(str, dontSendNotification);
+}
+
+void CustomUpDownButton::setToolTip(const String &str)
+{
+	m_label->setTooltip(str);
 }
 
 void CustomUpDownButton::resized(){};
+
+void CustomUpDownButton::labelTextChanged(Label *lbl)
+{
+}
 
 CustomButton::CustomButton(Parameter *param) : ParameterEditor(param)
 {
@@ -88,236 +107,77 @@ void CustomButton::setToolTip(const String &str)
 	m_btn->setTooltip(str);
 }
 
-void CustomButton::resized() {}
+void CustomButton::resized()
+{
+}
 
 RPiCamEditor::RPiCamEditor(GenericProcessor *parentNode)
 	: GenericEditor(parentNode)
 
 {
-	desiredWidth = 280;
+	desiredWidth = 320;
 
-	RPiCam *p = (RPiCam *)getProcessor();
-
-	addTextBoxParameterEditor("Port", 5, 25);
-	addTextBoxParameterEditor("Address", 95, 25);
-	addComboBoxParameterEditor("Resolution", 185, 25);
-	addComboBoxParameterEditor("FPS", 185, 65);
+	addTextBoxParameterEditor("Port", 5, 20);
+	addTextBoxParameterEditor("Address", 95, 20);
+	addComboBoxParameterEditor("Resolution", 235, 20);
+	addComboBoxParameterEditor("FPS", 235, 55);
 
 	Parameter *connect = getProcessor()->getParameter("Connect");
 	auto btn = new CustomButton(connect);
-	btn->setToolTip("Connect to the RPi");
-	addCustomParameterEditor(btn, 205, 105);
+	btn->setToolTip(connect->getDescription());
+	addCustomParameterEditor(btn, 215, 105);
 
 	Parameter *reInit = getProcessor()->getParameter("R");
 	btn = new CustomButton(reInit);
-	btn->setToolTip("Reinitialize automatic gain and white level balance");
+	btn->setToolTip(reInit->getDescription());
 	addCustomParameterEditor(btn, 5, 105);
 
 	Parameter *hFlip = getProcessor()->getParameter("H");
 	btn = new CustomButton(hFlip);
-	btn->setToolTip("Enable/disable horizontal flip");
+	btn->setToolTip(hFlip->getDescription());
 	addCustomParameterEditor(btn, 75, 105);
 
 	Parameter *vFlip = getProcessor()->getParameter("V");
 	btn = new CustomButton(vFlip);
-	btn->setToolTip("Enable/disable vertical flip");
+	btn->setToolTip(vFlip->getDescription());
 	addCustomParameterEditor(btn, 145, 105);
 
 	auto zoomLabel = new Label("Zoom", "Zoom:");
 	zoomLabel->setBounds(5, 70, 65, 25);
 	addAndMakeVisible(zoomLabel);
+
 	Parameter *left = getProcessor()->getParameter("Left");
-	addCustomParameterEditor(new CustomUpDownButton(left), 45, 65);
+	auto cbtn = new CustomUpDownButton(left);
+	cbtn->setToolTip(left->getDescription());
+	addCustomParameterEditor(cbtn, 50, 65);
+
 	Parameter *bottom = getProcessor()->getParameter("Bottom");
-	addCustomParameterEditor(new CustomUpDownButton(bottom), 75, 65);
+	cbtn = new CustomUpDownButton(bottom);
+	cbtn->setToolTip(bottom->getDescription());
+	addCustomParameterEditor(cbtn, 95, 65);
+
 	Parameter *width = getProcessor()->getParameter("Width");
-	addCustomParameterEditor(new CustomUpDownButton(width), 105, 65);
+	cbtn = new CustomUpDownButton(width, 100);
+	cbtn->setToolTip(width->getDescription());
+	addCustomParameterEditor(cbtn, 140, 65);
+
 	Parameter *height = getProcessor()->getParameter("Height");
-	addCustomParameterEditor(new CustomUpDownButton(height), 135, 65);
+	cbtn = new CustomUpDownButton(height, 100);
+	cbtn->setToolTip(height->getDescription());
+	addCustomParameterEditor(cbtn, 185, 65);
+
+	// adjust the address parameter editor to be a bit bigger
+	for (const auto &ed : parameterEditors)
+	{
+		if (ed->getParameterName().equalsIgnoreCase("Address"))
+		{
+			auto rect = ed->getBounds();
+			rect.setWidth(rect.getWidth() + 40);
+			ed->setBounds(rect);
+		}
+	}
 }
 
 RPiCamEditor::~RPiCamEditor()
 {
 }
-/*
-void RPiCamEditor::updateValues()
-{
-	RPiCam *p = (RPiCam *)getProcessor();
-
-	Value val = portEdit->getTextValue();
-	int pp = val.getValue();
-	if (p->getPort() != pp)
-	{
-		portEdit->setText(String(p->getPort()), dontSendNotification);
-	}
-
-	if (p->getAddress() != addressEdit->getText())
-	{
-		addressEdit->setText(p->getAddress(), dontSendNotification);
-	}
-
-	// set camera format based on resolution
-	int index = 0;
-	for (RPiCamFormat *fmt = camFormats.begin(); fmt++; fmt != camFormats.end())
-	{
-		if (fmt->width == p->getWidth() && fmt->height == p->getHeight())
-		{
-			resolutionCombo->setSelectedItemIndex(index + 1, dontSendNotification);
-
-			fpsCombo->clear();
-			RPiCamFormat fmt = camFormats[index];
-			for (int i = 0; i < fmt.framerate_max - fmt.framerate_min + 1; i++)
-			{
-				fpsCombo->addItem(String(fmt.framerate_min + i), i + 1);
-			}
-			fpsCombo->setSelectedItemIndex(p->getFramerate() - fmt.framerate_min - 1, dontSendNotification);
-
-			break;
-		}
-		index++;
-	}
-}
-
-void RPiCamEditor::enableControls(bool state)
-{
-	resolutionCombo->setEnabled(state);
-	fpsCombo->setEnabled(state);
-}
-
-void RPiCamEditor::buttonEvent(Button *button)
-{
-	RPiCam *p = (RPiCam *)getProcessor();
-
-	if (button == connectButton)
-	{
-		p->closeSocket();
-		p->openSocket();
-		p->sendCameraParameters();
-	}
-	else if (button == resetButton)
-	{
-		p->resetGains();
-	}
-	else if (button == hflipButton)
-	{
-		p->setHflip(button->getToggleState());
-	}
-	else if (button == vflipButton)
-	{
-		p->setVflip(button->getToggleState());
-	}
-	else
-	{
-		// this is not particularly efficient ...
-		int zoom[4];
-		p->getZoom(&zoom[0]);
-
-		for (int i = 0; i < 4; i++)
-		{
-			int currentValue = zoomValues[i]->getText().getIntValue();
-			int increment = 0;
-			if (button == upButtons[i])
-			{
-				increment = 1;
-			}
-
-			if (button == downButtons[i])
-			{
-				increment = -1;
-			}
-
-			if (increment != 0)
-			{
-				int newValue = currentValue + increment;
-				if (newValue >= 0 && newValue <= 100)
-				{
-					if ((i < 2 && newValue < zoom[i + 2]) || (i >= 2 && newValue > zoom[i - 2]))
-					{
-						zoom[i] = newValue;
-						zoomValues[i]->setText(String(zoom[i]), dontSendNotification);
-
-						p->setZoom(&zoom[0]);
-						break;
-					}
-				}
-			}
-		}
-	}
-}
-
-void RPiCamEditor::setLabelColor(juce::Colour color)
-{
-	addressEdit->setColour(Label::backgroundColourId, color);
-	portEdit->setColour(Label::backgroundColourId, color);
-}
-
-void RPiCamEditor::labelTextChanged(juce::Label *label)
-{
-	RPiCam *p = (RPiCam *)getProcessor();
-
-	if (label == portEdit)
-	{
-		Value val = label->getTextValue();
-		p->setPort(val.getValue());
-	}
-	else if (label == addressEdit)
-	{
-		p->setAddress(label->getText());
-	}
-	else
-	{
-		// again, not particularly elegant ...
-		int zoom[4];
-		p->getZoom(&zoom[0]);
-
-		for (int i = 0; i < 4; i++)
-		{
-			if (label == zoomValues[i])
-			{
-				int newValue = label->getText().getIntValue();
-				if (newValue >= 0 && newValue <= 100)
-				{
-					if ((i < 2 && newValue < zoom[i + 2]) || (i >= 2 && newValue > zoom[i - 2]))
-					{
-						zoom[i] = newValue;
-						p->setZoom(&zoom[0]);
-						break;
-					}
-					else
-					{
-						// invalid value -> keep old value
-						label->setText(String(zoom[i]), dontSendNotification);
-					}
-				}
-			}
-		}
-	}
-}
-
-void RPiCamEditor::comboBoxChanged(ComboBox *cb)
-{
-	RPiCam *p = (RPiCam *)getProcessor();
-
-	if (cb == resolutionCombo)
-	{
-		int index = cb->getSelectedItemIndex();
-		int w = camFormats[index].width;
-		int h = camFormats[index].height;
-		p->setResolution(w, h);
-
-		fpsCombo->clear();
-		RPiCamFormat fmt = camFormats[index];
-		for (int i = 0; i < fmt.framerate_max - fmt.framerate_min + 1; i++)
-		{
-			fpsCombo->addItem(String(fmt.framerate_min + i), i + 1);
-		}
-		fpsCombo->setSelectedItemIndex(fmt.framerate - fmt.framerate_min, sendNotification);
-	}
-	else if (cb == fpsCombo)
-	{
-		int index = cb->getSelectedItemIndex();
-		int fps = cb->getItemText(index).getIntValue();
-		p->setFramerate(fps);
-	}
-}
-*/

@@ -34,73 +34,19 @@ const int MAX_MESSAGE_LENGTH = 16000;
 #include <unistd.h>
 #endif
 
-String generateDateString()
-{
-	// adapted from RecordNode.cpp
-
-	Time t = Time::getCurrentTime();
-
-	String s;
-
-	s += String(t.getYear());
-	s += '-';
-
-	int m = t.getMonth() + 1;
-	if (m < 10)
-	{
-		s += "0";
-	}
-	s += String(m);
-	s += "-";
-
-	int day = t.getDayOfMonth();
-	if (day < 10)
-	{
-		s += "0";
-	}
-	s += String(day);
-
-	s += "_";
-
-	int hrs, mins, secs;
-	hrs = t.getHours();
-	mins = t.getMinutes();
-	secs = t.getSeconds();
-
-	if (hrs < 10)
-	{
-		s += "0";
-	}
-	s += hrs;
-	s += "-";
-
-	if (mins < 10)
-	{
-		s += "0";
-	}
-	s += mins;
-	s += "-";
-
-	if (secs < 10)
-	{
-		s += "0";
-	}
-	s += secs;
-
-	return s;
-}
-
 RPiCam::RPiCam()
 	: GenericProcessor("RPiCamera"), address(""), port(5555), context(NULL), socket(NULL), rpiRecPath(""), sendRecPathEvent(false), width(640), height(480), framerate(30), vflip(false), hflip(false), isRecording(false), zoom{0, 0, 100, 100}
 
 {
 	for (const auto &format : camFormats)
-	{
 		m_resolutions.add(String(format.width) + "x" + String(format.height));
-		m_fps.add(String(format.framerate));
-	}
+
+	auto nFormats = camFormats.size();
+	for (int i = camFormats[nFormats - 1].framerate_min; i < camFormats[nFormats - 1].framerate_max; ++i)
+		m_fps.add(String(i));
+
 	addIntParameter(Parameter::GLOBAL_SCOPE, "Port", "RPi port to connect to", 5555, 0, 10000, true);
-	addStringParameter(Parameter::GLOBAL_SCOPE, "Address", "RPi address to connect to", "", true);
+	addStringParameter(Parameter::GLOBAL_SCOPE, "Address", "RPi address to connect to", "128.40.51.152", true);
 	addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Resolution", "RPi camera resolution", m_resolutions, m_resolutions.size() - 1, true);
 	addCategoricalParameter(Parameter::GLOBAL_SCOPE, "FPS", "Frames per second", m_fps, 0, true);
 	addIntParameter(Parameter::GLOBAL_SCOPE, "Left", "Left edge of cameras ROI", 0, 0, 100, true);
@@ -155,22 +101,24 @@ void RPiCam::parameterValueChanged(Parameter *param)
 	}
 	else if (param->getName().equalsIgnoreCase("Left"))
 	{
-		LOGC("name: ", param->getName());
+		changeZoom();
 	}
 	else if (param->getName().equalsIgnoreCase("Bottom"))
 	{
-		LOGC("name: ", param->getName());
+		changeZoom();
 	}
 	else if (param->getName().equalsIgnoreCase("Width"))
 	{
-		LOGC("name: ", param->getName());
+		changeZoom();
 	}
 	else if (param->getName().equalsIgnoreCase("Height"))
 	{
-		LOGC("name: ", param->getName());
+		changeZoom();
 	}
 	else if (param->getName().equalsIgnoreCase("Connect"))
 	{
+		address = getParameter("Address")->getValueAsString();
+		port = (int)getParameter("Port")->getValue();
 		closeSocket();
 		openSocket();
 		sendCameraParameters();
@@ -187,6 +135,16 @@ void RPiCam::parameterValueChanged(Parameter *param)
 	{
 		setVflip((bool)param->getValue());
 	}
+}
+
+void RPiCam::changeZoom()
+{
+	int zoom[4];
+	zoom[0] = (int)(getParameter("Left")->getValue());
+	zoom[1] = (int)(getParameter("Bottom")->getValue());
+	zoom[2] = (int)(getParameter("Width")->getValue());
+	zoom[3] = (int)(getParameter("Height")->getValue());
+	setZoom(zoom);
 }
 
 void RPiCam::updateSettings()
@@ -450,6 +408,10 @@ void RPiCam::handleEvent(int eventType, juce::MidiMessage &event, int samplePosi
 {
 }
 
+bool RPiCam::startAcquisition()
+{
+}
+
 void RPiCam::startRecording()
 {
 	isRecording = true;
@@ -466,7 +428,7 @@ void RPiCam::startRecording()
 	// make sure to include a unique recording directory name to avoid overwriting data on the RPi
 	if (recPath.length() == 0)
 	{
-		recPath = generateDateString();
+		recPath = CoreServices::getRecordingDirectoryName();
 	}
 	msg += String(" Path=") + recPath;
 
@@ -492,23 +454,23 @@ void RPiCam::process(AudioSampleBuffer &buffer)
 
 	if (rpiRecPath.isNotEmpty() && sendRecPathEvent)
 	{
-		juce::int64 timestamp_software = timer.getHighResolutionTicks();
-		String msg1("RPiCam Address=" + address + " RecPath=" + rpiRecPath);
+		// juce::int64 timestamp_software = timer.getHighResolutionTicks();
+		// String msg1("RPiCam Address=" + address + " RecPath=" + rpiRecPath);
 
-		uint8 *msg1_raw = new uint8[msg1.length() + 1];
-		memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
-		*(msg1_raw + msg1.length()) = '\0';
+		// uint8 *msg1_raw = new uint8[msg1.length() + 1];
+		// memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
+		// *(msg1_raw + msg1.length()) = '\0';
 
-		auto meta_val = new MetadataValue(*timestamp_meta_desc);
-		meta_val->setValue(timestamp_software);
-		MetadataValueArray md;
-		md.add(meta_val);
-		TextEventPtr event = TextEvent::createTextEvent(messageChannel, CoreServices::getGlobalTimestamp(), String::fromUTF8(reinterpret_cast<const char *>((uint8 *)msg1_raw), msg1.length() + 1), md);
-		addEvent(event, 0);
+		// auto meta_val = new MetadataValue(*timestamp_meta_desc);
+		// meta_val->setValue(timestamp_software);
+		// MetadataValueArray md;
+		// md.add(meta_val);
+		// TextEventPtr event = TextEvent::createTextEvent(messageChannel, CoreServices::getGlobalTimestamp(), String::fromUTF8(reinterpret_cast<const char *>((uint8 *)msg1_raw), msg1.length() + 1), md);
+		// addEvent(event, 0);
 
-		delete[] msg1_raw;
+		// delete[] msg1_raw;
 
-		sendRecPathEvent = false;
+		// sendRecPathEvent = false;
 	}
 }
 

@@ -37,14 +37,18 @@ class RPiCam;
 */
 
 class CustomUpDownButton : public ParameterEditor,
-						   public Button::Listener
+						   public Button::Listener,
+						   public Label::Listener
 {
 public:
-	CustomUpDownButton(Parameter *);
+	CustomUpDownButton(Parameter *, int);
 	virtual ~CustomUpDownButton() {}
 	void buttonClicked(Button *label) override;
+	void labelTextChanged(Label *) override;
 	void updateView(){};
 	void resized() override;
+	void setToolTip(const String &);
+	void updateLabel();
 
 private:
 	std::unique_ptr<TriangleButton> m_up;

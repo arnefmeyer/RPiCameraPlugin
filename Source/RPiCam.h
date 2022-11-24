@@ -85,8 +85,6 @@ auto const timestamp_meta_desc = std::make_unique<MetadataDescriptor>(
     "OS high resolution timer count when the event was received",
     "timestamp.software");
 
-String generateDateString();
-
 class RPiCam : public GenericProcessor
 {
 public:
@@ -107,6 +105,7 @@ public:
     void enabledState(bool t);
     int getNumEventChannels() { return 1; };
 
+    bool startAcquisition() override;
     void startRecording() override;
     void stopRecording() override;
 
@@ -123,6 +122,7 @@ public:
     bool getVflip() { return vflip; }
     void setHflip(bool status);
     bool getHflip() { return hflip; }
+    void changeZoom();
     void setZoom(int z[4]);
     void getZoom(int *z);
     void resetGains();
