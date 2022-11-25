@@ -149,10 +149,13 @@ void RPiCam::changeZoom()
 
 void RPiCam::updateSettings()
 {
+	LOGC("updatesettings CALLED");
 	for (auto stream : getDataStreams())
 	{
+		LOGC("got some streams!");
 		if (stream == getDataStreams()[0])
 		{
+			LOGC("in updatesettings");
 			EventChannel::Settings settings{
 				EventChannel::Type::TEXT,
 				"RPiCamMessages",
@@ -164,6 +167,7 @@ void RPiCam::updateSettings()
 			chan->addEventMetadata(*timestamp_meta_desc);
 			eventChannels.add(chan);
 			messageChannel = chan;
+			LOGC("DONE updatesettings");
 		}
 	}
 }
@@ -374,8 +378,9 @@ String RPiCam::sendMessage(String msg, int timeout)
 		zmq_send(socket, msg.getCharPointer(), msg.length(), 0);
 
 		unsigned char *buffer = new unsigned char[MAX_MESSAGE_LENGTH];
+		LOGC("here");
 		int result = zmq_recv(socket, buffer, MAX_MESSAGE_LENGTH - 1, 0);
-
+		LOGC("here with result: ", result);
 		if (result < 0)
 		{
 			response = String(""); // responder died.
@@ -384,8 +389,9 @@ String RPiCam::sendMessage(String msg, int timeout)
 		{
 			response = String(reinterpret_cast<char *>(buffer), result);
 		}
-
+		LOGC("deleting bufer:..");
 		delete buffer;
+		LOGC("deletedbufer:..");
 	}
 	else
 	{
@@ -404,10 +410,6 @@ AudioProcessorEditor *RPiCam::createEditor()
 	return editor.get();
 }
 
-void RPiCam::handleEvent(int eventType, juce::MidiMessage &event, int samplePosition)
-{
-}
-
 bool RPiCam::startAcquisition()
 {
 }
@@ -417,8 +419,11 @@ void RPiCam::startRecording()
 	isRecording = true;
 
 	auto nodeId = getNodeId();
+	LOGC("node id = ", nodeId);
 	int expNumber = CoreServices::RecordNode::getExperimentNumber(nodeId);
+	LOGC("exp num = ", expNumber);
 	int recNumber = CoreServices::RecordNode::getRecordingNumber(nodeId) + 1;
+	LOGC("rec num = ", recNumber);
 	String recPath = CoreServices::RecordNode::getRecordingDirectory(nodeId).getFullPathName();
 
 	String msg("Start");
@@ -451,27 +456,27 @@ void RPiCam::stopRecording()
 
 void RPiCam::process(AudioSampleBuffer &buffer)
 {
+	LOGC("IN PROCESS");
+	// if (rpiRecPath.isNotEmpty() && sendRecPathEvent)
+	// {
+	// 	juce::int64 timestamp_software = timer.getHighResolutionTicks();
+	// 	String msg1("RPiCam Address=" + address + " RecPath=" + rpiRecPath);
 
-	if (rpiRecPath.isNotEmpty() && sendRecPathEvent)
-	{
-		// juce::int64 timestamp_software = timer.getHighResolutionTicks();
-		// String msg1("RPiCam Address=" + address + " RecPath=" + rpiRecPath);
+	// 	uint8 *msg1_raw = new uint8[msg1.length() + 1];
+	// 	memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
+	// 	*(msg1_raw + msg1.length()) = '\0';
 
-		// uint8 *msg1_raw = new uint8[msg1.length() + 1];
-		// memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
-		// *(msg1_raw + msg1.length()) = '\0';
+	// 	auto meta_val = new MetadataValue(*timestamp_meta_desc);
+	// 	meta_val->setValue(timestamp_software);
+	// 	MetadataValueArray md;
+	// 	md.add(meta_val);
+	// 	TextEventPtr event = TextEvent::createTextEvent(messageChannel, CoreServices::getGlobalTimestamp(), String::fromUTF8(reinterpret_cast<const char *>((uint8 *)msg1_raw), msg1.length() + 1), md);
+	// 	addEvent(event, 0);
 
-		// auto meta_val = new MetadataValue(*timestamp_meta_desc);
-		// meta_val->setValue(timestamp_software);
-		// MetadataValueArray md;
-		// md.add(meta_val);
-		// TextEventPtr event = TextEvent::createTextEvent(messageChannel, CoreServices::getGlobalTimestamp(), String::fromUTF8(reinterpret_cast<const char *>((uint8 *)msg1_raw), msg1.length() + 1), md);
-		// addEvent(event, 0);
+	// 	delete[] msg1_raw;
 
-		// delete[] msg1_raw;
-
-		// sendRecPathEvent = false;
-	}
+	// 	sendRecPathEvent = false;
+	// }
 }
 
 void RPiCam::enabledState(bool t)

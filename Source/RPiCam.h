@@ -135,8 +135,6 @@ public:
     String sendMessage(String msg, int timeout = -1);
 
 private:
-    void handleEvent(int eventType, MidiMessage &event, int samplePos);
-
     void createContext();
     void destroyContext();
 
