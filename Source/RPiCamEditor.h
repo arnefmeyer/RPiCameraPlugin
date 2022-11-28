@@ -78,8 +78,6 @@ public:
 	RPiCamEditor(GenericProcessor *parentNode);
 	virtual ~RPiCamEditor();
 
-	// void buttonEvent(Button *button);
-
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RPiCamEditor);
 };
 

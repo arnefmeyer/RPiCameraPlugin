@@ -1,17 +1,17 @@
 [
 {
-  "directory": "/home/robin/gits/OEPlugins/RPiCameraPlugin/Build",
-  "command": "/usr/bin/c++ -DDEBUG=1 -DJUCE_DISABLE_NATIVE_FILECHOOSERS=1 -DOEPLUGIN -DRPiCameraPlugin_EXPORTS -DZEROMQ -D_DEBUG=1 -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode/modules -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/Plugins/Headers -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/installed_libs/include -g -fPIC -fPIC -rdynamic -O3 -Wall -o CMakeFiles/RPiCameraPlugin.dir/Source/OpenEphysLib.cpp.o -c /home/robin/gits/OEPlugins/RPiCameraPlugin/Source/OpenEphysLib.cpp",
-  "file": "/home/robin/gits/OEPlugins/RPiCameraPlugin/Source/OpenEphysLib.cpp"
+  "directory": "C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Build",
+  "command": "/usr/bin/c++ -DDEBUG=1 -DJUCE_DISABLE_NATIVE_FILECHOOSERS=1 -DOEPLUGIN -DRPiCameraPlugin_EXPORTS -DZEROMQ -D_DEBUG=1 -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode/modules -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/Plugins/Headers -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/installed_libs/include -g -fPIC -fPIC -rdynamic -O3 -Wall -o CMakeFiles/RPiCameraPlugin.dir/Source/OpenEphysLib.cpp.o -c C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Source/OpenEphysLib.cpp",
+  "file": "C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Source/OpenEphysLib.cpp"
 },
 {
-  "directory": "/home/robin/gits/OEPlugins/RPiCameraPlugin/Build",
-  "command": "/usr/bin/c++ -DDEBUG=1 -DJUCE_DISABLE_NATIVE_FILECHOOSERS=1 -DOEPLUGIN -DRPiCameraPlugin_EXPORTS -DZEROMQ -D_DEBUG=1 -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode/modules -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/Plugins/Headers -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/installed_libs/include -g -fPIC -fPIC -rdynamic -O3 -Wall -o CMakeFiles/RPiCameraPlugin.dir/Source/RPiCam.cpp.o -c /home/robin/gits/OEPlugins/RPiCameraPlugin/Source/RPiCam.cpp",
-  "file": "/home/robin/gits/OEPlugins/RPiCameraPlugin/Source/RPiCam.cpp"
+  "directory": "C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Build",
+  "command": "/usr/bin/c++ -DDEBUG=1 -DJUCE_DISABLE_NATIVE_FILECHOOSERS=1 -DOEPLUGIN -DRPiCameraPlugin_EXPORTS -DZEROMQ -D_DEBUG=1 -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode/modules -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/Plugins/Headers -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/installed_libs/include -g -fPIC -fPIC -rdynamic -O3 -Wall -o CMakeFiles/RPiCameraPlugin.dir/Source/RPiCam.cpp.o -c C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Source/RPiCam.cpp",
+  "file": "C:\\Users\\Robin\\Documents\\Github\\OEPlugins\\RPiCameraPlugin\\Source\\RPiCam.cpp"
 },
 {
-  "directory": "/home/robin/gits/OEPlugins/RPiCameraPlugin/Build",
-  "command": "/usr/bin/c++ -DDEBUG=1 -DJUCE_DISABLE_NATIVE_FILECHOOSERS=1 -DOEPLUGIN -DRPiCameraPlugin_EXPORTS -DZEROMQ -D_DEBUG=1 -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode/modules -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/Plugins/Headers -I/home/robin/gits/OEPlugins/RPiCameraPlugin/../../plugin-GUI/installed_libs/include -g -fPIC -fPIC -rdynamic -O3 -Wall -o CMakeFiles/RPiCameraPlugin.dir/Source/RPiCamEditor.cpp.o -c /home/robin/gits/OEPlugins/RPiCameraPlugin/Source/RPiCamEditor.cpp",
-  "file": "/home/robin/gits/OEPlugins/RPiCameraPlugin/Source/RPiCamEditor.cpp"
+  "directory": "C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Build",
+  "command": "/usr/bin/c++ -DDEBUG=1 -DJUCE_DISABLE_NATIVE_FILECHOOSERS=1 -DOEPLUGIN -DRPiCameraPlugin_EXPORTS -DZEROMQ -D_DEBUG=1 -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/JuceLibraryCode/modules -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/Plugins/Headers -IC:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/../../plugin-GUI/installed_libs/include -g -fPIC -fPIC -rdynamic -O3 -Wall -o CMakeFiles/RPiCameraPlugin.dir/Source/RPiCamEditor.cpp.o -c C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Source/RPiCamEditor.cpp",
+  "file": "C:/Users/Robin/Documents/Github/OEPlugins/RPiCameraPlugin/Source/RPiCamEditor.cpp"
 }
 ]

@@ -78,13 +78,6 @@ auto const camFormats = Array<RPiCamFormat>(
      RPiCamFormat(800, 600, 30, 1, 60),
      RPiCamFormat(640, 480, 30, 1, 90)});
 
-auto const timestamp_meta_desc = std::make_unique<MetadataDescriptor>(
-    MetadataDescriptor::MetadataType::INT64,
-    1,
-    "Software timestamp",
-    "OS high resolution timer count when the event was received",
-    "timestamp.software");
-
 class RPiCam : public GenericProcessor
 {
 public:
@@ -157,7 +150,6 @@ private:
     int zoom[4];
     bool isRecording;
 
-    const EventChannel *messageChannel{nullptr};
     Time timer;
 
     CriticalSection lock;

@@ -150,25 +150,6 @@ void RPiCam::changeZoom()
 
 void RPiCam::updateSettings()
 {
-	LOGC("in updatesettings");
-	for (auto stream : getDataStreams())
-	{
-		LOGC("got a datastream!");
-		if (stream == getDataStreams()[0])
-		{
-			EventChannel::Settings settings{
-				EventChannel::Type::TEXT,
-				"RPiCamMessages",
-				"Messages received through the RPiCam plugin",
-				"external.network.rawData",
-				getDataStream(stream->getStreamId())};
-			EventChannel *chan = new EventChannel(settings);
-
-			chan->addEventMetadata(*timestamp_meta_desc);
-			eventChannels.add(chan);
-			messageChannel = chan;
-		}
-	}
 }
 
 void RPiCam::setPort(int p, bool connect, bool update)
@@ -181,12 +162,6 @@ void RPiCam::setPort(int p, bool connect, bool update)
 		{
 			closeSocket();
 			openSocket();
-		}
-
-		if (update)
-		{
-			RPiCamEditor *e = (RPiCamEditor *)getEditor();
-			// e->updateValues();
 		}
 	}
 }
@@ -201,12 +176,6 @@ void RPiCam::setAddress(String s, bool connect, bool update)
 		{
 			closeSocket();
 			openSocket();
-		}
-
-		if (update)
-		{
-			RPiCamEditor *e = (RPiCamEditor *)getEditor();
-			// e->updateValues();
 		}
 	}
 }
@@ -309,10 +278,10 @@ void RPiCam::destroyContext()
 {
 	if (context != NULL)
 	{
-		std::cout << "RPiCam destroying context ... ";
+		LOGC("RPiCam destroying context ... ");
 		zmq_ctx_destroy(context);
 		context = NULL;
-		std::cout << "done\n";
+		LOGC("done");
 	}
 }
 
@@ -322,23 +291,23 @@ void RPiCam::openSocket()
 	{
 		socket = zmq_socket(context, ZMQ_REQ);
 		String url = String("tcp://") + String(address) + ":" + String(port);
-		std::cout << "RPiCam connecting to " << url.toStdString() << " ... ";
+		LOGC("RPiCam connecting to ", url.toStdString(), " ... ");
 
 		int rc = zmq_connect(socket, url.toRawUTF8());
 
 		if (rc != 0)
 		{
-			std::cout << "failed to open socket: " << zmq_strerror(zmq_errno()) << "\n";
+			LOGC("failed to open socket: ", zmq_strerror(zmq_errno()));
 			socket = NULL;
 		}
 		else
 		{
-			std::cout << "done\n";
+			LOGC("done");
 		}
 	}
 	else
 	{
-		std::cout << "Socket already opened.\n";
+		LOGC("Socket already opened");
 	}
 }
 
@@ -346,10 +315,10 @@ bool RPiCam::closeSocket()
 {
 	if (socket != NULL)
 	{
-		std::cout << "RPiCam closing socket ...";
+		LOGC("RPiCam closing socket ...");
 		zmq_close(socket);
 		socket = NULL;
-		std::cout << "done\n";
+		LOGC("done");
 	}
 
 	return true;
@@ -369,7 +338,7 @@ String RPiCam::sendMessage(String msg, int timeout)
 {
 	String response;
 
-	std::cout << "RPiCam sending message: " << msg.toStdString() << " ... ";
+	LOGC("RPiCam sending message: ", msg.toStdString(), " ... ");
 
 	if (socket != NULL)
 	{
@@ -393,7 +362,7 @@ String RPiCam::sendMessage(String msg, int timeout)
 		response = String("not connected");
 	}
 
-	std::cout << "the RPi answered: " << response.toStdString() << "\n";
+	LOGC("the RPi answered: ", response.toStdString());
 
 	return response;
 }
@@ -432,9 +401,6 @@ void RPiCam::startRecording()
 
 	rpiRecPath = sendMessage(msg);
 	sendRecPathEvent = true;
-
-	RPiCamEditor *e = (RPiCamEditor *)getEditor();
-	// e->enableControls(false);
 }
 
 void RPiCam::stopRecording()
@@ -442,9 +408,6 @@ void RPiCam::stopRecording()
 	isRecording = false;
 
 	sendMessage(String("Stop"), 1000);
-
-	RPiCamEditor *e = (RPiCamEditor *)getEditor();
-	// e->enableControls(true);
 }
 
 void RPiCam::process(AudioSampleBuffer &buffer)
@@ -457,14 +420,8 @@ void RPiCam::process(AudioSampleBuffer &buffer)
 		uint8 *msg1_raw = new uint8[msg1.length() + 1];
 		memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
 		*(msg1_raw + msg1.length()) = '\0';
-
-		auto meta_val = new MetadataValue(*timestamp_meta_desc);
-		meta_val->setValue(timestamp_software);
-		MetadataValueArray md;
-		md.add(meta_val);
-		broadcastMessage()
-		// TextEventPtr event = TextEvent::createTextEvent(messageChannel, CoreServices::getGlobalTimestamp(), String::fromUTF8(reinterpret_cast<const char *>((uint8 *)msg1_raw), msg1.length() + 1), md);
-		// addEvent(event, 0);
+		String msgOut = msg1 + " Timestamp: " + String(timestamp_software);
+		broadcastMessage(msgOut);
 
 		delete[] msg1_raw;
 

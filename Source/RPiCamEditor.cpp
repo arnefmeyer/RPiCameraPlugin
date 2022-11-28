@@ -98,7 +98,11 @@ void CustomButton::buttonClicked(Button *btn)
 {
 	if (btn == m_btn.get())
 	{
-		param->setNextValue(m_btn->getLabel());
+		auto val = param->getValue();
+		if (val.isBool()) {
+			bool newval = (bool)val;
+			param->setNextValue(!newval);
+		}
 	}
 }
 
