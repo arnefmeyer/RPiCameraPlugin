@@ -420,7 +420,7 @@ void RPiCam::process(AudioSampleBuffer &buffer)
 		uint8 *msg1_raw = new uint8[msg1.length() + 1];
 		memcpy(msg1_raw, msg1.toRawUTF8(), msg1.length());
 		*(msg1_raw + msg1.length()) = '\0';
-		String msgOut = msg1 + " Timestamp: " + String(timestamp_software);
+		String msgOut = msg1 + " Timestamp=" + String(timestamp_software);
 		broadcastMessage(msgOut);
 
 		delete[] msg1_raw;
