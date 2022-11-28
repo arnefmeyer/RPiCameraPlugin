@@ -120,6 +120,8 @@ void RPiCam::parameterValueChanged(Parameter *param)
 	{
 		address = getParameter("Address")->getValueAsString();
 		port = (int)getParameter("Port")->getValue();
+		LOGC("address: ", address);
+		LOGC("port: ", port);
 		closeSocket();
 		openSocket();
 		sendCameraParameters();

@@ -103,6 +103,10 @@ void CustomButton::buttonClicked(Button *btn)
 			bool newval = (bool)val;
 			param->setNextValue(!newval);
 		}
+		auto name = param->getName();
+		if (name == "Connect") {
+			param->setNextValue(1);
+		}
 	}
 }
 
