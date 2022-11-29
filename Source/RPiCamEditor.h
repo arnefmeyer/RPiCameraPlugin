@@ -44,9 +44,9 @@ public:
 	CustomUpDownButton(Parameter *, int);
 	virtual ~CustomUpDownButton() {}
 	void buttonClicked(Button *label) override;
-	void labelTextChanged(Label *) override;
-	void updateView(){};
-	void resized() override;
+	void labelTextChanged(Label *){};
+	void updateView();
+	void resized(){};
 	void setToolTip(const String &);
 	void updateLabel();
 
@@ -64,8 +64,8 @@ public:
 	CustomButton(Parameter *);
 	virtual ~CustomButton(){};
 	void buttonClicked(Button *) override;
+	void resized(){};
 	void updateView(){};
-	void resized() override;
 	void setToolTip(const String &);
 
 private:
@@ -76,7 +76,7 @@ class RPiCamEditor : public GenericEditor
 {
 public:
 	RPiCamEditor(GenericProcessor *parentNode);
-	virtual ~RPiCamEditor();
+	virtual ~RPiCamEditor(){};
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RPiCamEditor);
 };

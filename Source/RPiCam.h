@@ -127,6 +127,9 @@ public:
 
     String sendMessage(String msg, int timeout = -1);
 
+    void saveCustomParametersToXml(XmlElement *xml);
+    void loadCustomParametersFromXml(XmlElement *xml);
+
 private:
     void createContext();
     void destroyContext();

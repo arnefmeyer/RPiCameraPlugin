@@ -26,8 +26,6 @@
 
 #include <stdio.h>
 
-#define MIN(a, b) ((a) < (b)) ? (a) : (b)
-
 CustomUpDownButton::CustomUpDownButton(Parameter *param, int initValue = 0) : ParameterEditor(param), m_value(initValue)
 {
 	m_up = std::make_unique<TriangleButton>(1);
@@ -69,7 +67,8 @@ void CustomUpDownButton::buttonClicked(Button *btn)
 void CustomUpDownButton::updateLabel()
 {
 	auto str = param->getName();
-	str = str.substring(0, 1) + String(":") + String(m_value);
+	str = str.substring(0, 1) + String(":") + param->getValueAsString();
+	m_value = (int)param->getValue();
 	m_label->setText(str, dontSendNotification);
 }
 
@@ -78,10 +77,9 @@ void CustomUpDownButton::setToolTip(const String &str)
 	m_label->setTooltip(str);
 }
 
-void CustomUpDownButton::resized(){};
-
-void CustomUpDownButton::labelTextChanged(Label *lbl)
+void CustomUpDownButton::updateView()
 {
+	updateLabel();
 }
 
 CustomButton::CustomButton(Parameter *param) : ParameterEditor(param)
@@ -99,12 +97,14 @@ void CustomButton::buttonClicked(Button *btn)
 	if (btn == m_btn.get())
 	{
 		auto val = param->getValue();
-		if (val.isBool()) {
+		if (val.isBool())
+		{
 			bool newval = (bool)val;
 			param->setNextValue(!newval);
 		}
 		auto name = param->getName();
-		if (name == "Connect") {
+		if (name == "Connect")
+		{
 			param->setNextValue(1);
 		}
 	}
@@ -113,10 +113,6 @@ void CustomButton::buttonClicked(Button *btn)
 void CustomButton::setToolTip(const String &str)
 {
 	m_btn->setTooltip(str);
-}
-
-void CustomButton::resized()
-{
 }
 
 RPiCamEditor::RPiCamEditor(GenericProcessor *parentNode)
@@ -184,8 +180,4 @@ RPiCamEditor::RPiCamEditor(GenericProcessor *parentNode)
 			ed->setBounds(rect);
 		}
 	}
-}
-
-RPiCamEditor::~RPiCamEditor()
-{
 }

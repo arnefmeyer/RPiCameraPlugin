@@ -26,7 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "RPiCamEditor.h"
 #include "../../plugin-GUI/Source/Utils/Utils.h"
 
-// const int MAX_MESSAGE_LENGTH = 64000;
 const int MAX_MESSAGE_LENGTH = 16000;
 
 #ifdef WIN32
@@ -434,4 +433,29 @@ void RPiCam::process(AudioSampleBuffer &buffer)
 void RPiCam::enabledState(bool t)
 {
 	isEnabled = t;
+}
+
+void RPiCam::saveCustomParametersToXml(XmlElement *xml)
+{
+	xml->setAttribute("Left", (int)getParameter("Left")->getValue());
+	xml->setAttribute("Bottom", (int)getParameter("Bottom")->getValue());
+	xml->setAttribute("Width", (int)getParameter("Width")->getValue());
+	xml->setAttribute("Height", (int)getParameter("Height")->getValue());
+}
+
+void RPiCam::loadCustomParametersFromXml(XmlElement *xml)
+{
+	int left = xml->getIntAttribute("Left", 0);
+	int bottom = xml->getIntAttribute("Bottom", 0);
+	int width = xml->getIntAttribute("Width", 100);
+	int height = xml->getIntAttribute("Height", 100);
+
+	auto param = getParameter("Left");
+	param->setNextValue(left);
+	param = getParameter("Bottom");
+	param->setNextValue(bottom);
+	param = getParameter("Width");
+	param->setNextValue(width);
+	param = getParameter("Height");
+	param->setNextValue(height);
 }
